@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { protectedProcedure, publicProcedure } from './init';
+import { protectedProcedure } from './init';
 import { events } from '../db/schema';
 import { eq, and, gte, or, isNull } from 'drizzle-orm';
 
@@ -10,7 +10,7 @@ export const eventsGet = protectedProcedure
     includePublic: z.boolean().default(true),
   }))
   .query(async ({ input, ctx }) => {
-    let whereConditions = [];
+    const whereConditions = [];
 
     if (input.startDate) {
       whereConditions.push(gte(events.startDate, input.startDate));

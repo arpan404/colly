@@ -1,6 +1,6 @@
 import { protectedProcedure } from './init';
 import { wellnessLogs, transactions, budgets, events, flashcards, flashcardDecks } from '../db/schema';
-import { eq, gte, lte, desc, sql, and } from 'drizzle-orm';
+import { gte, lte, desc, sql, and, eq } from 'drizzle-orm';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 
 export const dashboardGet = protectedProcedure.query(async ({ ctx }) => {
