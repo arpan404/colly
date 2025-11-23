@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PageLayout } from '@/components/PageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,10 +12,45 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { trpc } from '@/lib/trpc-client';
-import { Clock, Plus, Repeat, Calendar, Trash2, RotateCcw, AlertCircle, Eye, Edit2 } from 'lucide-react';
+import { Clock, Plus, Repeat, Calendar, Trash2, RotateCcw, AlertCircle, Edit2, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const getColorForCategory = (category?: string) => {
+  if (!category) {
+    return {
+      bg: 'bg-primary/10',
+      text: 'text-primary-foreground',
+      dot: 'bg-primary'
+    };
+  }
+  
+  // Predefined color schemes for different categories
+  const colorSchemes = {
+    'work': { bg: 'bg-blue-500/10', text: 'text-blue-50', dot: 'bg-blue-500' },
+    'exercise': { bg: 'bg-green-500/10', text: 'text-green-50', dot: 'bg-green-500' },
+    'study': { bg: 'bg-purple-500/10', text: 'text-purple-50', dot: 'bg-purple-500' },
+    'personal': { bg: 'bg-orange-500/10', text: 'text-orange-50', dot: 'bg-orange-500' },
+    'health': { bg: 'bg-pink-500/10', text: 'text-pink-50', dot: 'bg-pink-500' },
+    'social': { bg: 'bg-indigo-500/10', text: 'text-indigo-50', dot: 'bg-indigo-500' },
+    'default': { bg: 'bg-primary/10', text: 'text-primary-foreground', dot: 'bg-primary' }
+  };
+  
+  const categoryLower = category.toLowerCase();
+  return colorSchemes[categoryLower as keyof typeof colorSchemes] || colorSchemes.default;
+};
 
 export default function RoutinesPage() {
   const [showForm, setShowForm] = useState(false);
@@ -26,6 +61,9 @@ export default function RoutinesPage() {
   const createMutation = trpc.routines.create.useMutation();
   const updateMutation = trpc.routines.update.useMutation();
   const deleteMutation = trpc.routines.delete.useMutation();
+
+  // Delete dialog state
+  const [deleteRoutineId, setDeleteRoutineId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -167,16 +205,21 @@ export default function RoutinesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this routine?')) {
-      try {
-        await deleteMutation.mutateAsync({ id });
-        refetch();
-        setShowDetailsModal(false);
-        toast.success('Routine deleted successfully!');
-      } catch (err) {
-        console.error(err);
-        toast.error('Failed to delete routine');
-      }
+    setDeleteRoutineId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteRoutineId) return;
+
+    try {
+      await deleteMutation.mutateAsync({ id: deleteRoutineId });
+      refetch();
+      setShowDetailsModal(false);
+      toast.success('Routine deleted successfully!');
+      setDeleteRoutineId(null);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete routine');
     }
   };
 
@@ -193,6 +236,25 @@ export default function RoutinesPage() {
     setIsEditing(false);
     setEditFormErrors({});
     setShowDetailsModal(true);
+  };
+
+  const handleShowOverlappingRoutines = (positionedRoutines: any[], dayIndex: number, timeString: string) => {
+    // Show details of the first overlapping routine for now
+    // In a more advanced implementation, you could show a list of all overlapping routines
+    const visibleRoutines = positionedRoutines.filter(p => p && !p.isLastVisible);
+    if (visibleRoutines.length > 0) {
+      handleViewDetails(visibleRoutines[0].routine);
+    }
+  };
+
+  const handleTimeSlotClick = (dayIndex: number, time: string) => {
+    setFormData({
+      ...formData,
+      dayOfWeek: dayIndex,
+      startTime: time,
+      endTime: `${parseInt(time.split(':')[0]) + 1}:${time.split(':')[1]}`, // Default to 1 hour later
+    });
+    setShowForm(true);
   };
 
   // Keyboard navigation helper for routine blocks (arrow keys)
@@ -310,7 +372,7 @@ export default function RoutinesPage() {
 
   return (
     <PageLayout>
-      <div className="min-h-screen bg-background p-6 lg:p-8">
+      <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-12 gap-6">
@@ -320,7 +382,7 @@ export default function RoutinesPage() {
                   <Calendar className="w-7 h-7 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Weekly Routines</h1>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">Weekly Routines</h1>
                   <p className="text-sm text-muted-foreground mt-1 max-w-xl">A focused view of your weekly habits — click any routine to view, edit, or remove it.</p>
                 </div>
               </div>
@@ -616,15 +678,36 @@ export default function RoutinesPage() {
                         >
                           Close
                         </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={() => handleDelete(selectedRoutine.id)}
-                          className="gap-2 hover:bg-destructive/90 transition-colors"
-                          aria-label="Delete routine"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </Button>
+                        <AlertDialog open={deleteRoutineId === selectedRoutine.id} onOpenChange={(open) => !open && setDeleteRoutineId(null)}>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              className="gap-2 hover:bg-destructive/90 transition-colors"
+                              aria-label="Delete routine"
+                              onClick={() => setDeleteRoutineId(selectedRoutine.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Routine</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{selectedRoutine.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={confirmDelete}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete Routine
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   ) : (
@@ -754,36 +837,71 @@ export default function RoutinesPage() {
           </Dialog>
 
           {/* Weekly Calendar */}
-          <Card className={`rounded-2xl border bg-card/60 shadow-sm overflow-visible ${compactView ? 'hidden sm:block' : ''}`}>
+          <Card className={`rounded-2xl border-0 bg-linear-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-xl overflow-visible ${compactView ? 'hidden sm:block' : ''}`}>
             <CardContent className="p-0" role="region" aria-label="Weekly routines calendar">
               <div className="overflow-auto md:overflow-visible">
-                <div className="min-w-[980px]">
+                <div className="min-w-[980px] md:min-w-0">
               {/* Calendar Header */}
-              <div className="grid grid-cols-8 border-b border-border/30 bg-muted/20">
-                <div className="p-3 border-r border-border/30 bg-muted/10 w-[84px] flex items-center justify-center">
-                  <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Time</div>
+              <div className="grid grid-cols-8 border-b border-border/20 bg-linear-to-r from-muted/30 to-muted/10">
+                <div className="p-2 md:p-4 border-r border-border/20 bg-muted/20 flex items-center justify-center">
+                  <div className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wider">Time</div>
                 </div>
                 {DAYS.map((day, index) => (
-                  <div key={index} role="columnheader" aria-label={`${day} header`} className={`p-4 border-r border-border/30 last:border-r-0 text-center transition-colors ${index === new Date().getDay() ? 'bg-primary/5 border-primary/10' : 'bg-muted/10'}`}>
-                    <div className="text-sm font-semibold text-foreground mb-1">{day.slice(0, 3)}</div>
-                    <div className="text-xs text-muted-foreground">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                  <div key={index} role="columnheader" aria-label={`${day} header`} className={`p-2 md:p-5 border-r border-border/20 last:border-r-0 text-center transition-all duration-300 ${index === new Date().getDay() ? 'bg-primary/8 border-primary/20 shadow-inner' : 'bg-muted/10 hover:bg-muted/20'}`}>
+                    <div className="text-sm md:text-base font-bold text-foreground mb-1">{day.slice(0, 3)}</div>
+                    <div className="text-xs md:text-sm text-muted-foreground font-medium">{new Date(Date.now() + (index - new Date().getDay()) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                     {index === new Date().getDay() && (
-                      <Badge variant="secondary" className="mt-2 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15 transition-colors">
+                      <Badge variant="default" className="mt-2 md:mt-3 text-xs px-2 md:px-3 py-1 bg-primary/90 hover:bg-primary text-primary-foreground shadow-sm">
                         Today
                       </Badge>
                     )}
                   </div>
                 ))}
               </div>
-              {/* Mobile view toggle */}
-              <div className="flex sm:hidden items-center gap-2 ml-3">
-                <Button variant={compactView ? 'secondary' : 'ghost'} size="sm" onClick={() => setCompactView(false)} aria-pressed={!compactView}>
-                  Calendar
-                </Button>
-                <Button variant={compactView ? 'ghost' : 'secondary'} size="sm" onClick={() => setCompactView(true)} aria-pressed={compactView}>
-                  List
-                </Button>
-              </div>
+              {/* Mobile Search & Filters */}
+          <div className="sm:hidden space-y-4 mb-6">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Search routines..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-10 text-sm flex-1"
+                aria-label="Search routines"
+              />
+              <Select value={filterDay.toString()} onValueChange={(v) => setFilterDay(v === 'all' ? 'all' : parseInt(v))}>
+                <SelectTrigger className="h-10 w-32 text-sm">
+                  <SelectValue placeholder="Day" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any day</SelectItem>
+                  {DAYS.map((d, idx) => (
+                    <SelectItem key={idx} value={idx.toString()}>{d.slice(0, 3)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Select value={filterRecurring} onValueChange={(v) => setFilterRecurring(v as 'all' | 'yes' | 'no')}>
+                <SelectTrigger className="h-10 flex-1 text-sm">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="yes">Recurring</SelectItem>
+                  <SelectItem value="no">One-time</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant={compactView ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCompactView(!compactView)}
+                className="h-10 px-3"
+                aria-pressed={compactView}
+              >
+                {compactView ? 'Calendar' : 'List'}
+              </Button>
+            </div>
+          </div>
 
               <div className="relative">
                 {/* Time slots */}
@@ -793,9 +911,9 @@ export default function RoutinesPage() {
                   const isHour = hour % 2 === 0; // Alternate background for even hours
 
                   return (
-                    <div key={hour} role="row" aria-label={`Hour ${timeString}`} className={`grid grid-cols-8 border-b border-border/30 last:border-b-0 ${isHour ? 'bg-muted/20' : 'bg-background/50'}`}>
-                      <div className="p-4 border-r border-border/50 bg-muted/30 flex items-center justify-center">
-                        <div className="text-xs font-medium text-muted-foreground">{timeString}</div>
+                    <div key={hour} role="row" aria-label={`Hour ${timeString}`} className={`grid grid-cols-8 border-b border-border/10 last:border-b-0 ${isHour ? 'bg-muted/5' : 'bg-card/20'}`}>
+                      <div className="p-2 md:p-4 border-r border-border/20 bg-muted/20 flex items-center justify-center">
+                        <div className="text-xs md:text-sm font-medium text-muted-foreground">{timeString}</div>
                       </div>
                       {DAYS.map((day, dayIndex) => {
                         const dayRoutines = routinesByDay.find(d => d.dayIndex === dayIndex)?.routines || [];
@@ -808,51 +926,130 @@ export default function RoutinesPage() {
                           return routineStart < slotEnd && routineEnd > slotStart;
                         });
 
-                        return (
-                          <div key={dayIndex} role="gridcell" aria-label={`${DAYS[dayIndex]} ${timeString} slot`} className="relative min-h-20 border-r border-border/30 last:border-r-0 p-2 transition-colors hover:bg-muted/10">
-                            {routinesInSlot.map((routine: any, routineIndex: number) => {
+                        // Sort routines by start time for consistent positioning
+                        const sortedRoutinesInSlot = routinesInSlot.sort((a: any, b: any) => {
+                          const aStart = new Date(`2000-01-01T${a.startTime}`);
+                          const bStart = new Date(`2000-01-01T${b.startTime}`);
+                          return aStart.getTime() - bStart.getTime();
+                        });
+
+                        // Calculate positioning for overlapping routines with error handling (memoized for performance)
+                        const positionedRoutines = useMemo(() => {
+                          const allPositioned = sortedRoutinesInSlot.map((routine: any, index: number) => {
+                            try {
                               const startTime = new Date(`2000-01-01T${routine.startTime}`);
                               const endTime = new Date(`2000-01-01T${routine.endTime}`);
-                              const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // minutes
+
+                              // Validate time ranges
+                              if (isNaN(startTime.getTime()) || isNaN(endTime.getTime()) || startTime >= endTime) {
+                                console.warn(`Invalid time range for routine ${routine.id}: ${routine.startTime} - ${routine.endTime}`);
+                                return null;
+                              }
+
+                              const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
                               // Calculate the visible portion of the routine in this time slot
                               const visibleStart = new Date(Math.max(startTime.getTime(), slotStart.getTime()));
                               const visibleEnd = new Date(Math.min(endTime.getTime(), slotEnd.getTime()));
-                              const visibleDuration = (visibleEnd.getTime() - visibleStart.getTime()) / (1000 * 60);
-                              const height = Math.max((visibleDuration / 60) * 76, 32); // At least 32px height for partial visibility
+                              const visibleDuration = Math.max(0, (visibleEnd.getTime() - visibleStart.getTime()) / (1000 * 60));
+                              const height = Math.max((visibleDuration / 60) * 76, 32);
 
                               // Calculate vertical offset for routines that start before this slot
                               const minutesFromSlotStart = (visibleStart.getTime() - slotStart.getTime()) / (1000 * 60);
                               const topOffset = (minutesFromSlotStart / 60) * 76;
 
-                              // Calculate overlap and positioning
-                              const overlappingRoutines = routinesInSlot.filter((r: any) => {
-                                const rStart = new Date(`2000-01-01T${r.startTime}`);
-                                const rEnd = new Date(`2000-01-01T${r.endTime}`);
-                                return visibleStart < rEnd && visibleEnd > rStart;
+                              // Find overlapping routines for positioning
+                              const overlappingRoutines = sortedRoutinesInSlot.filter((r: any) => {
+                                try {
+                                  const rStart = new Date(`2000-01-01T${r.startTime}`);
+                                  const rEnd = new Date(`2000-01-01T${r.endTime}`);
+                                  return !isNaN(rStart.getTime()) && !isNaN(rEnd.getTime()) &&
+                                         visibleStart < rEnd && visibleEnd > rStart;
+                                } catch (e) {
+                                  return false;
+                                }
                               });
 
                               const overlapCount = overlappingRoutines.length;
+                              const maxVisibleRoutines = 3; // Maximum routines to show side by side
+                              const shouldShowMore = overlapCount > maxVisibleRoutines;
+
+                              // Calculate position in the overlap group
                               const routinePosition = overlappingRoutines.findIndex((r: any) => r.id === routine.id);
-                              const width = overlapCount > 1 ? `calc(${100 / overlapCount}% - 4px)` : 'calc(100% - 16px)';
-                              const left = overlapCount > 1 ? `calc(${routinePosition * (100 / overlapCount)}% + 8px)` : '8px';
+
+                              // Calculate width and position with safety checks
+                              const totalWidth = 100 - 16; // Account for padding
+                              const effectiveOverlapCount = Math.min(Math.max(overlapCount, 1), maxVisibleRoutines);
+                              const routineWidth = Math.max(totalWidth / effectiveOverlapCount - 4, 20); // Minimum 20px width
+
+                              const leftOffset = 8 + (routinePosition * (totalWidth / effectiveOverlapCount));
+
+                              return {
+                                routine,
+                                height,
+                                topOffset,
+                                leftOffset,
+                                width: routineWidth,
+                                overlapCount,
+                                shouldShowMore,
+                                routinePosition,
+                                isVisible: routinePosition < maxVisibleRoutines,
+                                isLastVisible: routinePosition === maxVisibleRoutines - 1 && shouldShowMore
+                              };
+                            } catch (error) {
+                              console.error(`Error positioning routine ${routine.id}:`, error);
+                              return null;
+                            }
+                          }).filter(Boolean); // Remove null entries from failed calculations
+
+                          // Only return the first maxVisibleRoutines positioned routines
+                          const maxVisibleRoutines = 3;
+                          const visiblePositioned = allPositioned.slice(0, maxVisibleRoutines);
+                          
+                          // If there are more routines than visible, mark the last visible one as showing "more"
+                          if (visiblePositioned.length > 0 && allPositioned.length > maxVisibleRoutines) {
+                            const lastVisible = visiblePositioned[visiblePositioned.length - 1];
+                            if (lastVisible) {
+                              lastVisible.isLastVisible = true;
+                              lastVisible.overlapCount = allPositioned.length; // Update with actual total count
+                            }
+                          }
+                          
+                          return visiblePositioned;
+                        }, [sortedRoutinesInSlot, slotStart, slotEnd]);
+
+                        return (
+                          <div key={dayIndex} role="gridcell" aria-label={`${DAYS[dayIndex]} ${timeString} slot`} className={`relative min-h-16 md:min-h-20 border-r border-border/10 last:border-r-0 p-1 md:p-2 transition-all duration-300 ${dayIndex === new Date().getDay() ? 'bg-primary/3' : 'bg-card/20 hover:bg-card/40'} ${positionedRoutines.length === 0 ? 'cursor-pointer hover:bg-primary/5' : ''}`} onClick={() => positionedRoutines.length === 0 ? handleTimeSlotClick(dayIndex, timeString) : undefined}>
+                            {positionedRoutines.length === 0 && (
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
+                                <div className="w-5 h-5 md:w-6 md:h-6 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
+                                  <Plus className="w-2.5 h-2.5 md:w-3 md:h-3 text-primary" />
+                                </div>
+                              </div>
+                            )}
+                            {positionedRoutines.map((positioned, index) => {
+                              // Type guard to ensure positioned is not null
+                              if (!positioned) return null;
+
+                              const { routine, height, topOffset, leftOffset, width, overlapCount, shouldShowMore, isLastVisible } = positioned;
+                              const color = getColorForCategory(routine.category || 'default');
 
                               return (
                                 <div
                                   key={routine.id}
-                                  className="absolute routine-block bg-primary/10 border border-primary/10 rounded-xl p-2 cursor-pointer hover:bg-primary/15 hover:border-primary/20 transition-all duration-200 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                                  className={`absolute routine-block rounded-lg md:rounded-xl p-2 md:p-3 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border-0 shadow-md ${color.bg} ${color.text} group`}
                                   style={{
                                     height: `${height}px`,
-                                    left: left,
-                                    width: width,
+                                    left: `${leftOffset}px`,
+                                    width: `${width}px`,
                                     top: `${topOffset}px`,
-                                    zIndex: routineIndex + 1
+                                    zIndex: index + 1
                                   }}
-                                  title={`${routine.title} — ${routine.startTime}–${routine.endTime}`}
+                                  title={`${routine.title} — ${routine.startTime}–${routine.endTime}${overlapCount > 1 ? ` (${overlapCount} overlapping)` : ''}`}
                                   tabIndex={0}
                                   data-day-index={dayIndex}
                                   data-start-minutes={(() => { const [h, m] = routine.startTime.split(':').map(Number); return h * 60 + m; })()}
-                                  onClick={() => handleViewDetails(routine)}
+                                  onClick={() => isLastVisible ? handleShowOverlappingRoutines(positionedRoutines, dayIndex, timeString) : handleViewDetails(routine)}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
@@ -864,37 +1061,26 @@ export default function RoutinesPage() {
                                 >
                                   <div className="flex items-center justify-between h-full">
                                     <div className="flex-1 min-w-0">
-                                      <div className="text-xs font-semibold text-primary truncate leading-tight">
-                                        {routine.title}
+                                      <div className="text-xs md:text-sm font-semibold truncate leading-tight mb-0.5 md:mb-1 group-hover:text-white/90">
+                                        {isLastVisible ? `+${overlapCount - 2} more` : routine.title}
                                       </div>
-                                      {routine.description && overlapCount === 1 && (
-                                        <div className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+                                      {!isLastVisible && routine.description && overlapCount === 1 && (
+                                        <div className="text-xs opacity-80 leading-tight line-clamp-1 md:line-clamp-2 group-hover:opacity-100">
                                           {routine.description}
                                         </div>
                                       )}
-                                    </div>
-                                    <div className="flex items-center gap-1 ml-1">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleViewDetails(routine);
-                                        }}
-                                        className="opacity-0 group-hover:opacity-100 h-5 w-5 p-0 text-primary hover:text-primary hover:bg-primary/10 transition-opacity duration-200 rounded-md"
-                                        title="View Details"
-                                        aria-label={`View details for ${routine.title}`}
-                                      >
-                                        <Eye className="w-3 h-3" />
-                                      </Button>
+                                      {!isLastVisible && overlapCount > 1 && (
+                                        <div className="text-xs opacity-80 leading-tight group-hover:opacity-100">
+                                          {routine.startTime} - {routine.endTime}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-                                  {routine.isRecurring && overlapCount === 1 && (
-                                    <div className="absolute bottom-1 right-1">
-                                      <Badge variant="outline" className="text-xs px-1 py-0 border-primary/30 text-primary/80 bg-primary/5">
-                                        <Repeat className="w-2 h-2 mr-0.5" />
-                                        Weekly
-                                      </Badge>
+                                  {routine.isRecurring && overlapCount === 1 && !isLastVisible && (
+                                    <div className="absolute bottom-1 md:bottom-2 right-1 md:right-2">
+                                      <div className="w-4 h-4 md:w-6 md:h-6 bg-white/10 rounded-full flex items-center justify-center border border-white/20 backdrop-blur-sm shadow-sm">
+                                        <Repeat className="w-2 h-2 md:w-3 md:h-3 text-white/80" />
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -913,31 +1099,61 @@ export default function RoutinesPage() {
           </Card>
 
           {/* Mobile / Compact list view: show per-day lists */}
-          <Card className="sm:hidden mt-4 border bg-card/60 shadow-sm">
-            <CardContent>
+          <Card className={`sm:hidden mt-4 md:mt-6 rounded-2xl border-0 bg-linear-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-xl ${compactView ? 'block' : 'hidden'}`}>
+            <CardContent className="p-4 md:p-6">
               {routinesByDay.map((d) => (
-                <div key={d.dayIndex} className="mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm font-semibold">{d.day}</div>
-                    <div className="text-xs text-muted-foreground">{d.routines.length} item{d.routines.length !== 1 ? 's' : ''}</div>
+                <div key={d.dayIndex} className="mb-4 md:mb-6 last:mb-0">
+                  <div className="flex items-center justify-between mb-3 md:mb-4">
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="text-base md:text-lg font-bold text-foreground">{d.day}</div>
+                      <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${d.dayIndex === new Date().getDay() ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                    </div>
+                    <Badge variant="secondary" className="text-xs px-2 md:px-3 py-1 bg-muted/20 hover:bg-muted/30 border-0">
+                      {d.routines.length} routine{d.routines.length !== 1 ? 's' : ''}
+                    </Badge>
                   </div>
 
                   {d.routines.length === 0 ? (
-                    <div className="text-sm text-muted-foreground p-3 border border-border/30 rounded-lg bg-muted/5">No routines</div>
+                    <div className="text-sm text-muted-foreground p-3 md:p-4 rounded-xl bg-muted/10 border border-border/20 backdrop-blur-sm">
+                      No routines scheduled
+                    </div>
                   ) : (
-                    <div className="space-y-2">
-                      {d.routines.map((routine: any) => (
-                        <div key={routine.id} className="p-3 rounded-lg border border-border/30 bg-muted/10 cursor-pointer hover:bg-muted/20 transition-colors flex items-center justify-between" onClick={() => handleViewDetails(routine)} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleViewDetails(routine); } }}>
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold text-foreground truncate">{routine.title}</div>
-                            <div className="text-xs text-muted-foreground">{routine.startTime} - {routine.endTime}</div>
+                    <div className="space-y-2 md:space-y-3">
+                      {d.routines.map((routine: any) => {
+                        const color = getColorForCategory(routine.category || 'default');
+                        return (
+                          <div
+                            key={routine.id}
+                            className={`p-3 md:p-4 rounded-xl border-0 shadow-md cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${color.bg} ${color.text} group`}
+                            onClick={() => handleViewDetails(routine)}
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleViewDetails(routine); } }}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-sm leading-tight mb-1 group-hover:text-white/90">
+                                  {routine.title}
+                                </div>
+                                <div className="text-xs opacity-80 leading-tight mb-1 md:mb-2 group-hover:opacity-100">
+                                  {routine.startTime} - {routine.endTime}
+                                </div>
+                                {routine.description && (
+                                  <div className="text-xs opacity-70 leading-tight line-clamp-2 group-hover:opacity-90">
+                                    {routine.description}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 ml-2 md:ml-3">
+                                {routine.isRecurring && (
+                                  <div className="w-5 h-5 md:w-6 md:h-6 bg-white/10 rounded-full flex items-center justify-center border border-white/20 backdrop-blur-sm shadow-sm">
+                                    <Repeat className="w-2 h-2 md:w-3 md:h-3 text-white/80" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="ml-2 flex items-center gap-2 text-xs">
-                            {routine.isRecurring && <Badge variant="outline" className="px-2 py-0.5">Weekly</Badge>}
-                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(routine); }} aria-label={`Open ${routine.title}`}>Open</Button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -947,47 +1163,51 @@ export default function RoutinesPage() {
 
           {/* Summary Stats */}
           {routines && routines.length > 0 && (
-            <Card className="mt-10 rounded-2xl border bg-card/60 shadow-sm">
-              <CardHeader className="pb-6">
+            <Card className="mt-10 rounded-2xl border-0 bg-linear-to-br from-card/80 to-card/60 backdrop-blur-sm shadow-xl overflow-hidden">
+              <CardHeader className="pb-8 bg-linear-to-r from-muted/10 to-muted/5 border-b border-border/10">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center shadow-sm border border-primary/5">
-                    <Calendar className="w-6 h-6 text-primary" />
+                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center shadow-sm border border-primary/5">
+                    <BarChart3 className="w-7 h-7 text-primary" />
                   </div>
                   <div>
-                    <CardTitle className="text-2xl font-semibold">Weekly Summary</CardTitle>
-                    <CardDescription className="text-muted-foreground mt-1">
+                    <CardTitle className="text-2xl font-bold text-foreground">Weekly Summary</CardTitle>
+                    <CardDescription className="text-muted-foreground mt-1 text-base">
                       Overview of your routine schedule and progress
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="text-center p-6 rounded-lg bg-muted/10 border border-border/30 hover:bg-muted/20 transition-colors">
-                    <div className="text-3xl font-extrabold text-primary mb-2">{routines.length}</div>
-                    <div className="text-sm text-muted-foreground font-medium">Total Routines</div>
+              <CardContent className="p-4 md:p-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  <div className="text-center p-4 md:p-6 rounded-2xl bg-linear-to-br from-blue-50/80 to-blue-100/60 dark:from-blue-950/20 dark:to-blue-900/10 border border-blue-200/20 dark:border-blue-800/20 hover:shadow-lg transition-all duration-300 group">
+                    <div className="text-2xl md:text-4xl font-extrabold text-blue-600 dark:text-blue-400 mb-2 md:mb-3 group-hover:scale-110 transition-transform duration-300">{routines.length}</div>
+                    <div className="text-xs md:text-sm text-muted-foreground font-semibold">Total Routines</div>
+                    <div className="w-8 h-0.5 md:w-12 md:h-1 bg-blue-200 dark:bg-blue-800 rounded-full mx-auto mt-2 md:mt-3 opacity-60" />
                   </div>
-                  <div className="text-center p-6 rounded-lg bg-muted/10 border border-border/30 hover:bg-muted/20 transition-colors">
-                    <div className="text-3xl font-extrabold text-green-600 mb-2">
+                  <div className="text-center p-4 md:p-6 rounded-2xl bg-linear-to-br from-green-50/80 to-green-100/60 dark:from-green-950/20 dark:to-green-900/10 border border-green-200/20 dark:border-green-800/20 hover:shadow-lg transition-all duration-300 group">
+                    <div className="text-2xl md:text-4xl font-extrabold text-green-600 dark:text-green-400 mb-2 md:mb-3 group-hover:scale-110 transition-transform duration-300">
                       {routines.filter((r: any) => r.isRecurring).length}
                     </div>
-                    <div className="text-sm text-muted-foreground font-medium">Recurring</div>
+                    <div className="text-xs md:text-sm text-muted-foreground font-semibold">Recurring</div>
+                    <div className="w-8 h-0.5 md:w-12 md:h-1 bg-green-200 dark:bg-green-800 rounded-full mx-auto mt-2 md:mt-3 opacity-60" />
                   </div>
-                  <div className="text-center p-6 rounded-lg bg-muted/10 border border-border/30 hover:bg-muted/20 transition-colors">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">
+                  <div className="text-center p-4 md:p-6 rounded-2xl bg-linear-to-br from-purple-50/80 to-purple-100/60 dark:from-purple-950/20 dark:to-purple-900/10 border border-purple-200/20 dark:border-purple-800/20 hover:shadow-lg transition-all duration-300 group">
+                    <div className="text-2xl md:text-4xl font-extrabold text-purple-600 dark:text-purple-400 mb-2 md:mb-3 group-hover:scale-110 transition-transform duration-300">
                       {new Set(routines.map((r: any) => r.dayOfWeek)).size}
                     </div>
-                    <div className="text-sm text-muted-foreground font-medium">Active Days</div>
+                    <div className="text-xs md:text-sm text-muted-foreground font-semibold">Active Days</div>
+                    <div className="w-8 h-0.5 md:w-12 md:h-1 bg-purple-200 dark:bg-purple-800 rounded-full mx-auto mt-2 md:mt-3 opacity-60" />
                   </div>
-                  <div className="text-center p-6 rounded-lg bg-muted/10 border border-border/30 hover:bg-muted/20 transition-colors">
-                    <div className="text-3xl font-bold text-purple-600 mb-2">
+                  <div className="text-center p-4 md:p-6 rounded-2xl bg-linear-to-br from-orange-50/80 to-orange-100/60 dark:from-orange-950/20 dark:to-orange-900/10 border border-orange-200/20 dark:border-orange-800/20 hover:shadow-lg transition-all duration-300 group">
+                    <div className="text-2xl md:text-4xl font-extrabold text-orange-600 dark:text-orange-400 mb-2 md:mb-3 group-hover:scale-110 transition-transform duration-300">
                       {Math.round(routines.reduce((acc: number, r: any) => {
                         const start = new Date(`2000-01-01T${r.startTime}`);
                         const end = new Date(`2000-01-01T${r.endTime}`);
                         return acc + (end.getTime() - start.getTime()) / (1000 * 60);
                       }, 0) / 60)}h
                     </div>
-                    <div className="text-sm text-muted-foreground font-medium">Weekly Time</div>
+                    <div className="text-xs md:text-sm text-muted-foreground font-semibold">Weekly Time</div>
+                    <div className="w-8 h-0.5 md:w-12 md:h-1 bg-orange-200 dark:bg-orange-800 rounded-full mx-auto mt-2 md:mt-3 opacity-60" />
                   </div>
                 </div>
               </CardContent>

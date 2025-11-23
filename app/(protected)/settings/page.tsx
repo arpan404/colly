@@ -95,7 +95,7 @@ const Settings = () => {
     if (hasChanges) {
       const timeoutId = setTimeout(() => {
         autoSaveSettings(currentSettings);
-      }, 2000); // Auto-save after 2 seconds of no changes
+      }, 50);
 
       return () => clearTimeout(timeoutId);
     }
@@ -166,7 +166,7 @@ const Settings = () => {
   return (
     <PageLayout>
       <div className="min-h-screen bg-linear-to-br from-background via-background/95 to-background/90">
-        <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
           {/* Modern Header */}
           <div className="mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -176,7 +176,7 @@ const Settings = () => {
                     <SettingsIcon className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h1 className="text-4xl font-bold bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                    <h1 className="text-3xl sm:text-4xl font-bold bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                       Settings
                     </h1>
                     <p className="text-lg text-muted-foreground">Customize your Colly experience</p>

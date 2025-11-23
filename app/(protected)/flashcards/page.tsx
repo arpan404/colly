@@ -14,6 +14,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { trpc } from '@/lib/trpc-client';
 import { BookOpen, Plus, Play, RotateCcw, CheckCircle, XCircle, Brain, Trophy, Target, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function FlashcardsPage() {
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
@@ -23,6 +34,10 @@ export default function FlashcardsPage() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
+
+  // Quiz completion dialog state
+  const [showQuizCompleteDialog, setShowQuizCompleteDialog] = useState(false);
+  const [finalQuizScore, setFinalQuizScore] = useState({ correct: 0, total: 0 });
 
   const { data: decks, refetch: refetchDecks } = trpc.flashcards.decks.get.useQuery();
   const { data: cards, refetch: refetchCards } = trpc.flashcards.get.useQuery(
@@ -149,8 +164,8 @@ export default function FlashcardsPage() {
           totalQuestions: newScore.total,
         });
       }
-      setQuizMode(false);
-      alert(`Quiz complete! Score: ${newScore.correct}/${newScore.total}`);
+      setFinalQuizScore(newScore);
+      setShowQuizCompleteDialog(true);
     }
   };
 
@@ -599,6 +614,34 @@ export default function FlashcardsPage() {
           </div>
         </div>
       </div>
+
+      {/* Quiz Complete Dialog */}
+      <AlertDialog open={showQuizCompleteDialog} onOpenChange={setShowQuizCompleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              Quiz Complete!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Great job! You scored {finalQuizScore.correct} out of {finalQuizScore.total} questions correctly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setShowQuizCompleteDialog(false);
+                setQuizMode(false);
+                setQuizScore({ correct: 0, total: 0 });
+                setCurrentCardIndex(0);
+                setShowAnswer(false);
+              }}
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageLayout>
   );
 }

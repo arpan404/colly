@@ -43,6 +43,7 @@ export const budgetsGet = protectedProcedure
       .leftJoin(transactions, and(
         eq(transactions.categoryId, budgets.categoryId),
         eq(transactions.userId, ctx.user.id),
+        eq(transactions.type, 'expense'),
         gte(transactions.date, new Date(input.year, input.month - 1, 1).toISOString().split('T')[0]),
         lte(transactions.date, new Date(input.year, input.month, 0).toISOString().split('T')[0])
       ))

@@ -6,94 +6,213 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, MapPin, Calendar, Bell, Plus, Search, Filter, Globe, Clock, Star } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar, dateFnsLocalizer, SlotInfo, ToolbarProps, Event, DateHeaderProps } from 'react-big-calendar';
+import { format as dateFormat, parse, startOfWeek, getDay, isSameDay, parseISO, format } from 'date-fns';
+import { enUS } from 'date-fns/locale';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import './big-calendar.css';
+import { Users, MapPin, Calendar as CalendarIcon, Bell, Plus, Search, Filter, Globe, Clock, Star, Edit, Trash2 } from "lucide-react";
 import { trpc } from '@/lib/trpc-client';
-import { format } from 'date-fns';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { toast } from 'sonner';
+
+const availableCategories = [
+  'Technology',
+  'Social',
+  'Arts',
+  'Business',
+  'Sports',
+  'Education',
+  'Health',
+  'Entertainment',
+  'Travel',
+  'Food'
+];
+
+const createEventSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  startDate: z.string().min(1, 'Start date is required'),
+  startTime: z.string().optional(),
+  endDate: z.string().optional(),
+  endTime: z.string().optional(),
+  location: z.string().optional(),
+  category: z.string().optional(),
+  isPublic: z.boolean().default(false),
+});
+
+type CreateEventForm = z.infer<typeof createEventSchema>;
+
+const localizer = dateFnsLocalizer({
+  format: dateFormat,
+  parse,
+  startOfWeek,
+  getDay,
+  locales: { 'en-US': enUS },
+});
 
 const SocialHub = () => {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
-  const { data: events, isLoading } = trpc.events.get.useQuery({ includePublic: true });
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
-  const mockEvents = [
-    {
-      id: "1",
-      title: "Tech Conference 2025",
-      location: "Downtown Convention Center",
-      date: "Nov 15, 2025",
-      time: "9:00 AM",
-      category: "Technology",
-      attendees: 150,
-      isPublic: true,
-      description: "Join us for the biggest tech conference of the year featuring industry leaders and innovative workshops.",
-      color: "border-blue-500",
-    },
-    {
-      id: "2",
-      title: "Community Meetup",
-      location: "Central Park Pavilion",
-      date: "Nov 18, 2025",
-      time: "6:00 PM",
-      category: "Social",
-      attendees: 45,
-      isPublic: true,
-      description: "A casual meetup for locals to connect, share ideas, and build community relationships.",
-      color: "border-green-500",
-    },
-    {
-      id: "3",
-      title: "Art Exhibition Opening",
-      location: "City Art Gallery",
-      date: "Nov 20, 2025",
-      time: "7:00 PM",
-      category: "Arts",
-      attendees: 75,
-      isPublic: true,
-      description: "Opening night reception for our new contemporary art exhibition featuring local artists.",
-      color: "border-purple-500",
-    },
-    {
-      id: "4",
-      title: "Startup Pitch Night",
-      location: "Innovation Hub",
-      date: "Nov 22, 2025",
-      time: "8:00 PM",
-      category: "Business",
-      attendees: 60,
-      isPublic: true,
-      description: "Watch emerging startups pitch their ideas to investors and industry experts.",
-      color: "border-orange-500",
-    },
-  ];
+  const { data: events, isLoading, refetch } = trpc.events.get.useQuery({ includePublic: true });
+  const createEventMutation = trpc.events.create.useMutation();
+  const updateEventMutation = trpc.events.update.useMutation();
+  const deleteEventMutation = trpc.events.delete.useMutation();
 
-  // Use real events data if available, otherwise fall back to mock data
-  const displayEvents = events && events.length > 0 ? events.map((event: any) => ({
-    id: event.id,
-    title: event.title,
-    location: event.location || "TBD",
-    date: format(new Date(event.startDate), 'MMM d, yyyy'),
-    time: event.startTime ? format(new Date(`2000-01-01T${event.startTime}`), 'h:mm a') : 'TBD',
-    category: event.category || 'General',
-    attendees: Math.floor(Math.random() * 100) + 10, // Mock attendee count
-    isPublic: event.isPublic,
-    description: event.description || 'No description available.',
-    color: "border-primary",
-  })) : mockEvents;
-
-  const filteredEvents = displayEvents.filter((event: any) => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         event.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         event.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || event.category.toLowerCase() === filterCategory.toLowerCase();
-    return matchesSearch && matchesCategory;
+  const form = useForm<CreateEventForm>({
+    resolver: zodResolver(createEventSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      startDate: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '',
+      startTime: '',
+      endDate: '',
+      endTime: '',
+      location: '',
+      category: '',
+      isPublic: false,
+    },
   });
 
-  const categories: string[] = ['all', ...Array.from(new Set(displayEvents.map((event: any) => event.category))) as string[]];
+  const bigCalendarEvents = useMemo(() => {
+    if (!events) return [];
+    return events.map(event => ({
+      id: event.id,
+      title: event.title,
+      start: event.startTime ? new Date(`${event.startDate}T${event.startTime}`) : new Date(event.startDate),
+      end: event.endTime ? new Date(`${event.endDate || event.startDate}T${event.endTime}`) : new Date(event.endDate || event.startDate),
+      resource: event,
+    }));
+  }, [events]);
+
+  // Map events to date keys (yyyy-MM-dd) so month cells can show colored dots
+  const eventsByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    if (!bigCalendarEvents) return map;
+    bigCalendarEvents.forEach((ev) => {
+      try {
+        const key = format(ev.start, 'yyyy-MM-dd');
+        if (!map[key]) map[key] = [];
+        map[key].push(ev);
+      } catch (e) {
+        // ignore invalid dates
+      }
+    });
+    return map;
+  }, [bigCalendarEvents]);
+
+  const getColorForCategory = (category?: string) => {
+    if (!category) return 'hsl(var(--primary))';
+    
+    // Generate a more varied color palette using string hash
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) {
+      hash = category.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Use different hue ranges for more variety
+    const hue = Math.abs(hash) % 360;
+    const saturation = 65 + (Math.abs(hash) % 20); // 65-85%
+    const lightness = 45 + (Math.abs(hash >> 8) % 20); // 45-65%
+    
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  const eventsForSelectedDate = useMemo(() => {
+    if (!events || !selectedDate) return [];
+    return events.filter(event => isSameDay(parseISO(event.startDate), selectedDate));
+  }, [events, selectedDate]);
+
+  const handleCreateEvent = async (data: CreateEventForm) => {
+    try {
+      await createEventMutation.mutateAsync(data);
+      toast.success('Event created successfully!');
+      setCreateDialogOpen(false);
+      form.reset();
+      refetch();
+    } catch (error) {
+      toast.error('Failed to create event');
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteEventMutation.mutateAsync({ id: eventId });
+      toast.success('Event deleted successfully!');
+      refetch();
+    } catch (error) {
+      toast.error('Failed to delete event');
+    }
+  };
+
+  const filteredEventsForDate = useMemo(() => {
+    let filtered = eventsForSelectedDate;
+    if (searchQuery) {
+      filtered = filtered.filter(event =>
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.category?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(event => event.category === filterCategory);
+    }
+    return filtered;
+  }, [eventsForSelectedDate, searchQuery, filterCategory]);
+
+  // categories for the select - use available categories
+  const categories = useMemo(() => {
+    return ['all', ...availableCategories];
+  }, []);
+
+  // upcoming events (optionally filtered by search/category)
+  const filteredUpcomingEvents = useMemo(() => {
+    if (!events) return [];
+    const today = new Date();
+    let upcoming = events.filter(e => {
+      try {
+        return parseISO(e.startDate) >= new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      } catch (err) {
+        return false;
+      }
+    });
+    if (searchQuery) {
+      upcoming = upcoming.filter(event =>
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.category?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    if (filterCategory !== 'all') {
+      upcoming = upcoming.filter(event => event.category === filterCategory);
+    }
+    // sort by start date ascending
+    upcoming.sort((a, b) => {
+      try {
+        return parseISO(a.startDate).getTime() - parseISO(b.startDate).getTime();
+      } catch (e) {
+        return 0;
+      }
+    });
+    return upcoming;
+  }, [events, searchQuery, filterCategory]);
+  
 
   return (
     <PageLayout>
-      <div className="p-8 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
           <div>
@@ -103,153 +222,414 @@ const SocialHub = () => {
               </div>
               <h1 className="text-3xl font-bold text-foreground">Social Hub</h1>
             </div>
-            <p className="text-muted-foreground">Discover and connect with events in your community</p>
+            <p className="text-muted-foreground">Discover and manage your events</p>
           </div>
 
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" />
-            Create Event
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Search and Filters */}
-            <Card className="shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search events, locations, or categories..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                Create Event
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Create New Event</DialogTitle>
+                <DialogDescription>
+                  Add a new event to your calendar. Fill in the details below.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleCreateEvent)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Event title" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Event description" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="startTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Time</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger className="w-full sm:w-48">
-                      <Filter className="w-4 h-4 mr-2" />
-                      <SelectValue placeholder="Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category === 'all' ? 'All Categories' : category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="endTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Time</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Event location" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {availableCategories.map((category) => (
+                              <SelectItem key={category} value={category}>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: getColorForCategory(category) }}
+                                  />
+                                  {category}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="isPublic"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Make this event public</FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createEventMutation.isPending}>
+                      {createEventMutation.isPending ? 'Creating...' : 'Create Event'}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Event Detail Dialog */}
+        <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded-full"
+                  style={{ backgroundColor: getColorForCategory(selectedEvent?.category || undefined) }}
+                />
+                {selectedEvent?.title}
+              </DialogTitle>
+              <DialogDescription>
+                Event details and information
+              </DialogDescription>
+            </DialogHeader>
+            {selectedEvent && (
+              <div className="space-y-4">
+                {selectedEvent.description && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">Description</h4>
+                    <p className="text-sm text-muted-foreground">{selectedEvent.description}</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">Start Date</h4>
+                    <p className="text-sm">{format(parseISO(selectedEvent.startDate), 'MMM d, yyyy')}</p>
+                  </div>
+                  {selectedEvent.endDate && (
+                    <div>
+                      <h4 className="font-medium text-sm mb-1">End Date</h4>
+                      <p className="text-sm">{format(parseISO(selectedEvent.endDate), 'MMM d, yyyy')}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedEvent.startTime && (
+                    <div>
+                      <h4 className="font-medium text-sm mb-1">Start Time</h4>
+                      <p className="text-sm">{format(parseISO(`2000-01-01T${selectedEvent.startTime}`), 'h:mm a')}</p>
+                    </div>
+                  )}
+                  {selectedEvent.endTime && (
+                    <div>
+                      <h4 className="font-medium text-sm mb-1">End Time</h4>
+                      <p className="text-sm">{format(parseISO(`2000-01-01T${selectedEvent.endTime}`), 'h:mm a')}</p>
+                    </div>
+                  )}
+                </div>
+                {selectedEvent.location && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-1 flex items-center">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      Location
+                    </h4>
+                    <p className="text-sm">{selectedEvent.location}</p>
+                  </div>
+                )}
+                {selectedEvent.category && (
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">Category</h4>
+                    <Badge
+                      variant="secondary"
+                      style={{
+                        backgroundColor: `${getColorForCategory(selectedEvent.category)}30`,
+                        color: getColorForCategory(selectedEvent.category),
+                      }}
+                    >
+                      {selectedEvent.category}
+                    </Badge>
+                  </div>
+                )}
+                {selectedEvent.isPublic && (
+                  <div>
+                    <Badge variant="outline" className="text-xs">
+                      <Globe className="w-3 h-3 mr-1" />
+                      Public Event
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main Content - Calendar */}
+          <div className="lg:col-span-3">
+            <Card className="shadow-lg">
+              <CardContent className="p-0">
+                <div className="h-[600px]">
+                  <Calendar
+                    localizer={localizer}
+                    events={bigCalendarEvents}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: '100%' }}
+                    views={['month']}
+                    defaultView="month"
+                    onSelectSlot={(slotInfo: SlotInfo) => setSelectedDate(slotInfo.start)}
+                    selectable
+                    popup
+                    components={{
+                      toolbar: ({ label, onNavigate, onView }: any) => (
+                        <div className="flex justify-between items-center p-4 bg-background border-b">
+                          <button onClick={() => onNavigate('PREV')} className="p-2 hover:bg-muted rounded-md transition-colors">
+                            ‹
+                          </button>
+                          <h2 className="text-lg font-semibold text-foreground">{label}</h2>
+                          <button onClick={() => onNavigate('NEXT')} className="p-2 hover:bg-muted rounded-md transition-colors">
+                            ›
+                          </button>
+                        </div>
+                      ),
+                      month: {
+                        dateHeader: ({ date, label }: any) => {
+                          const key = format(date, 'yyyy-MM-dd');
+                          const evs = eventsByDate[key] || [];
+                          return (
+                            <div className="flex flex-col items-center py-2">
+                              <div className="text-center text-sm font-medium text-foreground">{label}</div>
+                              {evs.length > 0 && (
+                                <div className="rbc-date-dots mt-1">
+                                  {evs.slice(0, 4).map((e: any, idx: number) => {
+                                    const dotColor = getColorForCategory(e.resource?.category);
+                                    return (
+                                      <span
+                                        key={e.id + '-' + idx}
+                                        className="rbc-date-dot"
+                                        style={{ backgroundColor: dotColor }}
+                                        title={e.title}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        },
+                      },
+                      // hide event labels in month cells; we show dots instead
+                      event: () => null,
+                    }}
+                    eventPropGetter={(event: any) => ({
+                      style: {
+                        display: 'none',
+                      },
+                    })}
+                    dayPropGetter={() => ({ style: {} })}
+                  />
                 </div>
               </CardContent>
             </Card>
-
-            {/* Events Grid */}
-            {isLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="text-center">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading events...</p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredEvents.map((event: any) => (
-                  <Card key={event.id} className="shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden">
-                    <div className={`h-2 ${event.color.replace('border-', 'bg-')}`}></div>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg mb-1">{event.title}</CardTitle>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="secondary">{event.category}</Badge>
-                            {event.isPublic && (
-                              <Badge variant="outline" className="gap-1">
-                                <Globe className="w-3 h-3" />
-                                Public
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="w-4 h-4" />
-                          <span>{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="w-4 h-4" />
-                          <span>{event.date} at {event.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Users className="w-4 h-4" />
-                          <span>{event.attendees} attending</span>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        <Button variant="outline" size="sm" className="flex-1 gap-2">
-                          <Bell className="w-4 h-4" />
-                          Notify Me
-                        </Button>
-                        <Button size="sm" className="flex-1 gap-2">
-                          <Calendar className="w-4 h-4" />
-                          Add to Calendar
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-            {filteredEvents.length === 0 && !isLoading && (
-              <Card className="shadow-lg">
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-muted-foreground mb-2">No events found</h3>
-                  <p className="text-muted-foreground text-center">
-                    Try adjusting your search or filter criteria
-                  </p>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
-          {/* Sidebar */}
+          {/* Right Sidebar */}
           <div className="space-y-6">
-            {/* Quick Stats */}
+            {/* Search and Filters */}
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-primary" />
-                  This Month
+                  <Search className="w-5 h-5 text-primary" />
+                  Search & Filter
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">{filteredEvents.length}</div>
-                  <div className="text-sm text-muted-foreground">Events Available</div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search events..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <div className="text-xl font-semibold text-green-600">
-                      {filteredEvents.filter((e: any) => e.category === 'Technology').length}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Tech Events</div>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger>
+                    <Filter className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category === 'all' ? 'All Categories' : category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            {/* Today's Events */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary" />
+                  {selectedDate ? format(selectedDate, 'MMM d') : 'Today'}'s Events
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                   </div>
-                  <div>
-                    <div className="text-xl font-semibold text-blue-600">
-                      {filteredEvents.filter((e: any) => e.category === 'Social').length}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Social Events</div>
+                ) : filteredEventsForDate.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No events on this date</p>
+                ) : (
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+                    {filteredEventsForDate.slice(0, 10).map((event) => (
+                      <div
+                        key={event.id}
+                        className="group flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-accent/50 hover:shadow-sm transition-all duration-200"
+                        onClick={() => {
+                          setSelectedEvent(event);
+                          setDetailDialogOpen(true);
+                        }}
+                      >
+                        <div
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: getColorForCategory(event.category || undefined) }}
+                        />
+                        <h4 className="font-medium text-sm truncate flex-1">
+                          {event.title}
+                        </h4>
+                        {event.startTime && (
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {format(parseISO(`2000-01-01T${event.startTime}`), 'h:mm a')}
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -257,48 +637,42 @@ const SocialHub = () => {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Upcoming This Week
+                  <CalendarIcon className="w-5 h-5 text-primary" />
+                  Upcoming Events
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {filteredEvents.slice(0, 3).map((event: any) => (
-                    <div key={event.id} className="flex items-start gap-3 p-3 bg-secondary/30 rounded-lg">
-                      <div className={`w-3 h-3 rounded-full mt-1 ${event.color.replace('border-', 'bg-')}`}></div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">{event.title}</h4>
-                        <p className="text-xs text-muted-foreground">{event.date}</p>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : filteredUpcomingEvents.length > 0 ? (
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+                    {filteredUpcomingEvents.slice(0, 10).map((event) => (
+                      <div
+                        key={event.id}
+                        className="group flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-accent/50 hover:shadow-sm transition-all duration-200"
+                        onClick={() => {
+                          setSelectedEvent(event);
+                          setDetailDialogOpen(true);
+                        }}
+                      >
+                        <div
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: getColorForCategory(event.category || undefined) }}
+                        />
+                        <h4 className="font-medium text-sm truncate flex-1">
+                          {event.title}
+                        </h4>
+                        <div className="text-xs text-muted-foreground shrink-0">
+                          {format(parseISO(event.startDate), 'MMM d')}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  {filteredEvents.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">No upcoming events</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Categories */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-primary" />
-                  Categories
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {categories.filter(cat => cat !== 'all').map((category) => {
-                    const count = filteredEvents.filter((e: any) => e.category === category).length;
-                    return (
-                      <div key={category} className="flex items-center justify-between">
-                        <span className="text-sm">{category}</span>
-                        <Badge variant="secondary" className="text-xs">{count}</Badge>
-                      </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">No upcoming events</p>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -7,8 +7,10 @@ import { routinesGet, routineCreate, routineUpdate, routineDelete } from './rout
 import { budgetCategoriesGet, budgetCategoryCreate, budgetsGet, budgetCreate, transactionsGet, transactionCreate } from './budgets';
 import { eventsGet, eventCreate, eventUpdate, eventDelete } from './events';
 import { wellnessLogsGet, wellnessLogCreate, wellnessLogUpdate } from './wellness';
-import { flashcardDecksGet, flashcardDeckCreate, flashcardsGet, flashcardCreate, flashcardUpdate, quizResultCreate } from './flashcards';
+import { flashcardDecksGet, flashcardDeckCreate, flashcardDeckDelete, flashcardDeckGet, flashcardsGet, flashcardCreate, flashcardUpdate, flashcardDelete, quizResultCreate, flashcardsStatsGet, flashcardDeckStatsGet } from './flashcards';
+import { studyGoalsGet, studyGoalCreate, studyGoalUpdate, studyGoalDelete, studySessionsGet, studySessionCreate, studySchedulesGet, studyScheduleCreate, studyScheduleUpdate, studyScheduleDelete, studyPlanStatsGet } from './study-plans';
 import { userPreferencesGet, userPreferencesUpdate, userProfileGet, userProfileUpdate } from './user-profile';
+import { notificationsRouter } from './notifications';
 
 export const authRouter = router({
   signup: authSignup,
@@ -70,14 +72,45 @@ export const flashcardsRouter = router({
   decks: router({
     get: flashcardDecksGet,
     create: flashcardDeckCreate,
+    delete: flashcardDeckDelete,
+    single: flashcardDeckGet,
   }),
   get: flashcardsGet,
   create: flashcardCreate,
   update: flashcardUpdate,
+  delete: flashcardDelete,
   quiz: router({
     result: router({
       create: quizResultCreate,
     }),
+  }),
+  stats: router({
+    get: flashcardsStatsGet,
+    deck: router({
+      get: flashcardDeckStatsGet,
+    }),
+  }),
+});
+
+export const studyPlansRouter = router({
+  goals: router({
+    get: studyGoalsGet,
+    create: studyGoalCreate,
+    update: studyGoalUpdate,
+    delete: studyGoalDelete,
+  }),
+  sessions: router({
+    get: studySessionsGet,
+    create: studySessionCreate,
+  }),
+  schedules: router({
+    get: studySchedulesGet,
+    create: studyScheduleCreate,
+    update: studyScheduleUpdate,
+    delete: studyScheduleDelete,
+  }),
+  stats: router({
+    get: studyPlanStatsGet,
   }),
 });
 
@@ -90,6 +123,8 @@ export const appRouter = router({
   events: eventsRouter,
   wellness: wellnessRouter,
   flashcards: flashcardsRouter,
+  studyPlans: studyPlansRouter,
+  notifications: notificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

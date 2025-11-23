@@ -14,6 +14,17 @@ import { trpc } from '@/lib/trpc-client';
 import { format } from 'date-fns';
 import { Calendar, Clock, MapPin, Plus, Users, Trash2, CalendarDays, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function EventsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +32,9 @@ export default function EventsPage() {
   const createMutation = trpc.events.create.useMutation();
   const updateMutation = trpc.events.update.useMutation();
   const deleteMutation = trpc.events.delete.useMutation();
+
+  // Delete dialog state
+  const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -129,13 +143,18 @@ export default function EventsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this event?')) {
-      try {
-        await deleteMutation.mutateAsync({ id });
-        refetch();
-      } catch (err) {
-        console.error(err);
-      }
+    setDeleteEventId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteEventId) return;
+
+    try {
+      await deleteMutation.mutateAsync({ id: deleteEventId });
+      refetch();
+      setDeleteEventId(null);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -153,7 +172,7 @@ export default function EventsPage() {
 
   return (
     <PageLayout>
-      <div className="p-8 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
           <div>
@@ -413,14 +432,35 @@ export default function EventsPage() {
                               )}
                             </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(event.id)}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <AlertDialog open={deleteEventId === event.id} onOpenChange={(open) => !open && setDeleteEventId(null)}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => setDeleteEventId(event.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{event.title}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={confirmDelete}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete Event
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">

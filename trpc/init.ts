@@ -34,7 +34,7 @@ export const isAuthed = middleware(({ ctx, next }) => {
   const token = authHeader.replace('Bearer ', '');
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
-    return next({ ctx: { ...ctx, user: payload } as any });
+    return next({ ctx: { ...ctx, user: payload } });
   } catch {
     throw new TRPCError({
       code: 'UNAUTHORIZED',

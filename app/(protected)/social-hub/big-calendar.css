@@ -1,0 +1,174 @@
+/* Custom styles for react-big-calendar to match the modern design */
+
+.rbc-calendar {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  font-family: inherit;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 hsl(var(--foreground) / 0.1), 0 1px 2px -1px hsl(var(--foreground) / 0.1);
+}
+
+.rbc-header {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  padding: 12px 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rbc-date-cell {
+  color: hsl(var(--foreground)) !important;
+  padding: 8px 4px;
+  transition: background-color 0.2s ease;
+}
+
+.rbc-date-cell:hover {
+  background-color: hsl(var(--accent) / 0.5);
+}
+
+.rbc-date-cell.rbc-off-range {
+  color: hsl(var(--foreground) / 0.4) !important;
+}
+
+.rbc-today {
+  background-color: hsl(var(--accent));
+  font-weight: 600;
+}
+
+.rbc-event {
+  border-radius: 6px;
+  border: none;
+  padding: 2px 6px;
+  margin: 1px 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.05);
+  transition: transform 0.1s ease;
+}
+
+.rbc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px hsl(var(--foreground) / 0.1), 0 2px 4px -2px hsl(var(--foreground) / 0.1);
+}
+
+.rbc-event.rbc-selected {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.rbc-slot-selection {
+  background-color: hsl(var(--accent) / 0.8);
+}
+
+.rbc-toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 0;
+  background: hsl(var(--background));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.rbc-toolbar button {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.05);
+}
+
+.rbc-toolbar button:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px hsl(var(--foreground) / 0.1), 0 2px 4px -2px hsl(var(--foreground) / 0.1);
+}
+
+.rbc-toolbar button.rbc-active {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.05);
+}
+
+.rbc-toolbar-label {
+  color: hsl(var(--foreground));
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 16px;
+}
+
+.rbc-month-view {
+  border: none;
+  border-radius: 0;
+}
+
+.rbc-month-row {
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.rbc-month-row:last-child {
+  border-bottom: none;
+}
+
+.rbc-day-bg {
+  border-right: 1px solid hsl(var(--border));
+  transition: background-color 0.2s ease;
+}
+
+.rbc-day-bg:hover {
+  background-color: hsl(var(--accent) / 0.3);
+}
+
+.rbc-day-bg:last-child {
+  border-right: none;
+}
+
+.rbc-day-bg.rbc-today {
+  background-color: hsl(var(--accent) / 0.5);
+}
+
+/* Hide default toolbar since we're using custom component */
+.rbc-toolbar {
+  display: none;
+}
+
+/* Dots shown under date headers to indicate events */
+.rbc-date-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.rbc-date-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  display: inline-block;
+  box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.15);
+  border: 1px solid hsl(var(--background) / 0.18);
+}
+
+.rbc-date-dot-more {
+  width: auto;
+  padding: 0 6px;
+  height: 16px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+}
+
+.rbc-day-bg.rbc-off-range-bg{
+    background-color: hsl(var(--muted)) !important;
+}

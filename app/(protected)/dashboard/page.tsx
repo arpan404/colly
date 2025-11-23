@@ -1,15 +1,66 @@
 'use client';
 
 import { PageLayout } from "@/components/PageLayout";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Bell, BookOpen } from "lucide-react";
+import { Calendar, Bell, BookOpen, Lightbulb, Brain, BarChart3, Clock, Hand } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { trpc } from '@/lib/trpc-client';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import { useState, useEffect } from 'react';
+
+const productivityTips = [
+  {
+    text: "Drink water, sleep enough, and move a little every day — your brain works best when your body feels good.",
+    icon: Brain
+  },
+  {
+    text: "Break large tasks into smaller, manageable chunks. Progress compounds when you build momentum.",
+    icon: BarChart3
+  },
+  {
+    text: "Review your flashcards regularly using spaced repetition. Consistent practice beats cramming.",
+    icon: BookOpen
+  },
+  {
+    text: "Set specific, measurable goals for your study sessions. Track what works and adjust accordingly.",
+    icon: Lightbulb
+  },
+  {
+    text: "Take short breaks between study sessions. The Pomodoro Technique (25+5) can boost productivity.",
+    icon: Clock
+  },
+  {
+    text: "Create a dedicated study space free from distractions. Your environment shapes your focus.",
+    icon: Hand
+  },
+  {
+    text: "Track your expenses weekly. Small savings add up to big financial freedom over time.",
+    icon: BarChart3
+  },
+  {
+    text: "Establish morning routines that set a positive tone for your entire day.",
+    icon: Calendar
+  }
+];
 
 export default function DashboardPage() {
   const { data, isLoading } = trpc.dashboard.get.useQuery();
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+
+  useEffect(() => {
+    // Shuffle to a new tip every hour
+    const interval = setInterval(() => {
+      setCurrentTipIndex((prevIndex) => (prevIndex + 1) % productivityTips.length);
+    }, 60 * 60 * 1000); // 1 hour
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentTip = productivityTips[currentTipIndex];
+  const TipIcon = currentTip.icon;
 
   if (isLoading) {
     return (
@@ -26,194 +77,323 @@ export default function DashboardPage() {
 
   return (
     <PageLayout>
-      <div className="p-8 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back! 👋</h1>
-            <p className="text-muted-foreground">Here's what's happening with your productivity today.</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Bell className="w-4 h-4" />
-              Notifications
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main content area */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Tip of the hour */}
-            <Card className="p-8 bg-linear-to-r from-primary/5 via-primary/10 to-primary/5 border-primary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center shrink-0">
-                  <span className="text-2xl">💡</span>
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold mb-3 text-primary">Tip of the hour</h2>
-                  <div className="p-4 bg-white/50 dark:bg-black/20 rounded-lg border border-primary/10">
-                    <p className="text-foreground/90 leading-relaxed">
-                      Drink water, sleep enough, and move a little every day — your brain works best when your body feels good. 💪🧠
-                    </p>
+      <div className="min-h-screen bg-linear-to-br from-background via-background/95 to-background/90">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+          {/* Modern Header */}
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-linear-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center shadow-lg border border-primary/20">
+                    <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                      Dashboard
+                    </h1>
+                    <p className="text-base sm:text-lg text-muted-foreground">Welcome back! Here's what's happening with your productivity today.</p>
                   </div>
                 </div>
               </div>
-            </Card>
+              <div className="flex items-center gap-4">
+                <NotificationsDropdown />
+              </div>
+            </div>
+          </div>
 
-            {/* Budget Analytics */}
-            <Card className="p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">Budget Analytics</h2>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  On track
-                </div>
-              </div>
-              <div className="h-64 bg-linear-to-br from-secondary/20 to-secondary/10 rounded-xl flex items-center justify-center border-2 border-dashed border-secondary/30 mb-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                    📊
-                  </div>
-                  <p className="text-muted-foreground font-medium">Interactive Chart</p>
-                  <p className="text-xs text-muted-foreground">Coming soon</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="p-4 bg-secondary/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Total Spent</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    ${Number(data?.budgetSummary.totalSpent || 0).toFixed(2)}
-                  </p>
-                </div>
-                <div className="p-4 bg-secondary/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Total Budget</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    ${Number(data?.budgetSummary.totalBudget || 0).toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </Card>
-
-            {/* Flashcards */}
-            <div>
-              <h2 className="text-xl font-semibold mb-6">Recent Flashcards</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {data?.recentFlashcards && data.recentFlashcards.length > 0 ? (
-                  data.recentFlashcards.slice(0, 2).map((card: { id: string; front: string; deckTitle: string }) => (
-                    <Card key={card.id} className="p-6 bg-linear-to-br from-secondary/20 to-secondary/10 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-secondary/30">
-                      <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center shrink-0">
-                          <BookOpen className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground mb-2">{card.front}</p>
-                          <p className="text-sm text-muted-foreground">{card.deckTitle}</p>
-                        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main content area */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Tip of the hour - Modern Card */}
+              <Card className="group relative overflow-hidden border-0 shadow-xl bg-linear-to-br from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
+                <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CardContent className="relative z-10 p-4 sm:p-6 lg:p-8">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+                      <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <h2 className="text-lg sm:text-xl font-semibold text-primary">Tip of the hour</h2>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCurrentTipIndex((prevIndex) => (prevIndex + 1) % productivityTips.length)}
+                          className="text-primary hover:bg-primary/10 h-8 w-8 p-0"
+                          title="Next tip"
+                        >
+                          <Lightbulb className="w-4 h-4" />
+                        </Button>
                       </div>
+                      <div className="p-3 sm:p-4 bg-white/50 dark:bg-black/20 rounded-lg border border-primary/10 backdrop-blur-sm">
+                        <p className="text-sm sm:text-base text-foreground/90 leading-relaxed flex items-center gap-2">
+                          {currentTip.text}
+                          <TipIcon className="w-4 h-4 text-primary inline shrink-0" />
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>              {/* Budget Analytics - Modern Card */}
+              <Card className="group relative overflow-hidden border-0 shadow-xl bg-linear-to-br from-card/50 to-card/30 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
+                <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CardContent className="relative z-10 p-4 sm:p-6 lg:p-8">
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <h2 className="text-lg sm:text-xl font-semibold">Budget Analytics</h2>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className={`w-2 h-2 rounded-full ${
+                        data?.budgetBreakdown?.some(item => Number(item.spent) > Number(item.budgeted))
+                          ? 'bg-destructive'
+                          : Number(data?.budgetSummary.totalSpent || 0) > Number(data?.budgetSummary.totalBudget || 0) * 0.9
+                          ? 'bg-yellow-500'
+                          : 'bg-green-500'
+                      }`}></div>
+                      <span className="hidden sm:inline text-xs sm:text-sm">
+                        {data?.budgetBreakdown?.some(item => Number(item.spent) > Number(item.budgeted))
+                          ? 'Over Budget'
+                          : Number(data?.budgetSummary.totalSpent || 0) > Number(data?.budgetSummary.totalBudget || 0) * 0.9
+                          ? 'Near Limit'
+                          : 'On Track'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-48 sm:h-64 bg-linear-to-br from-secondary/20 to-secondary/10 rounded-xl border-2 border-dashed border-secondary/30 mb-4 sm:mb-6 hover:border-primary/30 transition-colors duration-300 p-2 sm:p-4">
+                    {data?.budgetBreakdown && data.budgetBreakdown.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={data.budgetBreakdown.map(item => ({
+                            category: item.category,
+                            budgeted: Number(item.budgeted),
+                            spent: Number(item.spent),
+                            remaining: Math.max(0, Number(item.budgeted) - Number(item.spent)),
+                            overBudget: Math.max(0, Number(item.spent) - Number(item.budgeted)),
+                            isOverBudget: Number(item.spent) > Number(item.budgeted)
+                          }))}
+                          margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                          <XAxis
+                            dataKey="category"
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={10}
+                            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                            angle={-45}
+                            textAnchor="end"
+                            height={50}
+                            interval={0}
+                          />
+                          <YAxis
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={10}
+                            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                            tickFormatter={(value) => `$${value}`}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                              fontSize: '12px'
+                            }}
+                            formatter={(value, name) => [
+                              `$${Number(value).toFixed(2)}`,
+                              name === 'budgeted' ? 'Budgeted' :
+                              name === 'spent' ? 'Spent' : name
+                            ]}
+                            labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
+                          />
+                          <Legend
+                            wrapperStyle={{ fontSize: '10px', color: 'hsl(var(--muted-foreground))' }}
+                          />
+                          <Bar
+                            dataKey="spent"
+                            name="Spent"
+                            fill="hsl(var(--primary))"
+                            radius={[2, 2, 0, 0]}
+                            opacity={0.8}
+                          />
+                          <Bar
+                            dataKey="budgeted"
+                            name="Budgeted"
+                            fill="hsl(var(--muted))"
+                            radius={[2, 2, 0, 0]}
+                            opacity={0.6}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-lg">
+                          <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground font-medium text-sm sm:text-base">No budget data</p>
+                        <p className="text-xs text-muted-foreground mt-1">Create budgets to see analytics</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-6">
+                    <div className="p-3 sm:p-4 bg-linear-to-br from-secondary/30 to-secondary/20 rounded-lg border border-secondary/30 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Spent</p>
+                      <p className="text-lg sm:text-2xl font-bold text-foreground">
+                        ${Number(data?.budgetSummary.totalSpent || 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="p-3 sm:p-4 bg-linear-to-br from-secondary/30 to-secondary/20 rounded-lg border border-secondary/30 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Budget</p>
+                      <p className="text-lg sm:text-2xl font-bold text-foreground">
+                        ${Number(data?.budgetSummary.totalBudget || 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Flashcards - Modern Section */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-linear-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Recent Flashcards</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {data?.recentFlashcards && data.recentFlashcards.length > 0 ? (
+                    data.recentFlashcards.slice(0, 2).map((card: { id: string; front: string; deckTitle: string }) => (
+                      <Card key={card.id} className="group relative overflow-hidden border-0 shadow-lg bg-linear-to-br from-secondary/20 to-secondary/10 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm">
+                        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <CardContent className="relative z-10 p-6">
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 bg-linear-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center shrink-0 shadow-sm">
+                              <BookOpen className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-foreground mb-2">{card.front}</p>
+                              <p className="text-sm text-muted-foreground">{card.deckTitle}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card className="group relative overflow-hidden border-2 border-dashed border-secondary/40 shadow-lg bg-linear-to-br from-secondary/20 to-secondary/10 backdrop-blur-sm hover:shadow-xl transition-all duration-300 md:col-span-2">
+                      <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <CardContent className="relative z-10 p-8">
+                        <div className="text-center">
+                          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                            <BookOpen className="w-8 h-8 text-primary" />
+                          </div>
+                          <p className="text-muted-foreground font-medium">No recent flashcards</p>
+                          <p className="text-xs text-muted-foreground mt-1">Create some flashcards to get started!</p>
+                        </div>
+                      </CardContent>
                     </Card>
-                  ))
-                ) : (
-                  <Card className="p-8 bg-secondary/20 border-dashed border-secondary/40">
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions - Modern Section */}
+              <div>
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <div className="w-8 h-8 bg-linear-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-semibold">Quick Actions</h2>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                  <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                      <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                    </div>
+                    <span className="text-xs sm:text-sm">Quiz/Trivia</span>
+                  </Button>
+                  <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                      <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                    </div>
+                    <span className="text-xs sm:text-sm">Budget Report</span>
+                  </Button>
+                  <Link href="/events" className="block">
+                    <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 w-full hover:scale-105 hover:shadow-lg">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                      </div>
+                      <span className="text-xs sm:text-sm">Create Event</span>
+                    </Button>
+                  </Link>
+                  <Link href="/routines" className="block">
+                    <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 w-full hover:scale-105 hover:shadow-lg">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                      </div>
+                      <span className="text-xs sm:text-sm">Your Routine</span>
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Right sidebar - Upcoming Events */}
+            <div className="space-y-4 sm:space-y-6">
+              {/* Right sidebar - Upcoming Events - Modern Card */}
+              <Card className="group relative overflow-hidden border-0 shadow-xl bg-linear-to-br from-card/50 to-card/30 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
+                <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CardContent className="relative z-10 p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center shadow-sm">
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-semibold">Upcoming Events</h2>
+                  </div>
+
+                  {/* Calendar placeholder */}
+                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-linear-to-br from-secondary/20 to-secondary/10 rounded-xl border border-secondary/30 hover:border-primary/30 transition-colors duration-300">
                     <div className="text-center">
-                      <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-muted-foreground font-medium">No recent flashcards</p>
-                      <p className="text-xs text-muted-foreground mt-1">Create some flashcards to get started!</p>
-                    </div>
-                  </Card>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div>
-              <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Button variant="outline" className="h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200">
-                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                    🧠
-                  </div>
-                  <span className="text-sm">Quiz/Trivia</span>
-                </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200">
-                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                    📊
-                  </div>
-                  <span className="text-sm">Budget Report</span>
-                </Button>
-                <Link href="/events" className="block">
-                  <Button variant="outline" className="h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 w-full">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                      📅
-                    </div>
-                    <span className="text-sm">Create Event</span>
-                  </Button>
-                </Link>
-                <Link href="/routines" className="block">
-                  <Button variant="outline" className="h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 w-full">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                      ⏰
-                    </div>
-                    <span className="text-sm">Your Routine</span>
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Right sidebar - Upcoming Events */}
-          <div className="space-y-6">
-            <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-primary" />
-                </div>
-                <h2 className="text-xl font-semibold">Upcoming Events</h2>
-              </div>
-
-              {/* Calendar placeholder */}
-              <div className="mb-6 p-4 bg-linear-to-br from-secondary/20 to-secondary/10 rounded-xl border border-secondary/30">
-                <div className="text-center">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">November 2025</div>
-                  <div className="grid grid-cols-7 gap-1 text-xs">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                      <div key={i} className="text-center text-muted-foreground py-1">{day}</div>
-                    ))}
-                    {Array.from({ length: 35 }, (_, i) => (
-                      <div key={i} className={`text-center py-1 ${i === 15 ? 'bg-primary text-primary-foreground rounded' : ''}`}>
-                        {((i - 1) % 31) + 1}
+                      <div className="text-sm font-medium text-muted-foreground mb-2">November 2025</div>
+                      <div className="grid grid-cols-7 gap-1 text-xs">
+                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                          <div key={i} className="text-center text-muted-foreground py-1">{day}</div>
+                        ))}
+                        {Array.from({ length: 35 }, (_, i) => (
+                          <div key={i} className={`text-center py-1 text-xs ${i === 15 ? 'bg-primary text-primary-foreground rounded' : ''}`}>
+                            {((i - 1) % 31) + 1}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Events list */}
-              <div className="space-y-3">
-                {data?.upcomingEvents && data.upcomingEvents.length > 0 ? (
-                  data.upcomingEvents.map((event: { id: string; title: string; startDate: string; startTime: string | null }) => (
-                    <div key={event.id} className="flex items-start gap-3 p-4 bg-secondary/30 rounded-lg hover:bg-secondary/40 transition-colors duration-200">
-                      <div className="w-3 h-3 rounded-full bg-primary mt-1.5 shrink-0"></div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-foreground block truncate">{event.title}</span>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(event.startDate), 'MMM d, yyyy')}
-                          {event.startTime && ` at ${event.startTime}`}
+                  {/* Events list */}
+                  <div className="space-y-3">
+                    {data?.upcomingEvents && data.upcomingEvents.length > 0 ? (
+                      data.upcomingEvents.map((event: { id: string; title: string; startDate: string; startTime: string | null }) => (
+                        <div key={event.id} className="group/item flex items-start gap-3 p-3 sm:p-4 bg-linear-to-r from-secondary/30 to-secondary/20 rounded-lg hover:bg-secondary/40 transition-all duration-200 hover:scale-[1.02] border border-secondary/30 hover:border-primary/30">
+                          <div className="w-3 h-3 rounded-full bg-primary mt-1.5 shrink-0 group-hover/item:scale-110 transition-transform duration-200"></div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-foreground block truncate">{event.title}</span>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {format(new Date(event.startDate), 'MMM d, yyyy')}
+                              {event.startTime && ` at ${event.startTime}`}
+                            </div>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 sm:py-8">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                          <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground font-medium text-sm sm:text-base">No upcoming events</p>
+                        <p className="text-xs text-muted-foreground mt-1">Create your first event!</p>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground font-medium">No upcoming events</p>
-                    <p className="text-xs text-muted-foreground mt-1">Create your first event!</p>
+                    )}
                   </div>
-                )}
-              </div>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
+          </div>
       </div>
     </PageLayout>
   );

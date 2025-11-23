@@ -120,7 +120,7 @@ export default function WellnessPage() {
                   <Heart className="w-6 h-6 text-muted-foreground dark:text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                  <h1 className="text-3xl sm:text-4xl font-bold bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                     Wellness Tracker
                   </h1>
                   <p className="text-lg text-muted-foreground">Monitor your mood, sleep, and hydration habits</p>

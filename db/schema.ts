@@ -140,6 +140,61 @@ export const quizResults = pgTable('quiz_results', {
   completedAt: timestamp('completed_at').defaultNow().notNull(),
 });
 
+// Study goals
+export const studyGoals = pgTable('study_goals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  type: varchar('type', { length: 20 }).notNull(), // 'daily', 'weekly', 'monthly'
+  targetValue: integer('target_value').notNull(), // e.g., 20 cards, 60 minutes
+  targetUnit: varchar('target_unit', { length: 20 }).notNull(), // 'cards', 'minutes', 'sessions'
+  currentValue: integer('current_value').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  deadline: date('deadline'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Study sessions
+export const studySessions = pgTable('study_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  deckId: uuid('deck_id').references(() => flashcardDecks.id, { onDelete: 'cascade' }),
+  duration: integer('duration').notNull(), // minutes
+  cardsReviewed: integer('cards_reviewed').default(0).notNull(),
+  sessionType: varchar('session_type', { length: 20 }).default('flashcards').notNull(), // 'flashcards', 'quiz'
+  startedAt: timestamp('started_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+});
+
+// Study schedules
+export const studySchedules = pgTable('study_schedules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  dayOfWeek: integer('day_of_week').notNull(), // 0-6 (Sunday-Saturday)
+  startTime: time('start_time').notNull(),
+  endTime: time('end_time').notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Notifications
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  message: text('message').notNull(),
+  type: varchar('type', { length: 50 }).default('info').notNull(), // info, warning, success, error
+  isRead: boolean('is_read').default(false).notNull(),
+  actionUrl: varchar('action_url', { length: 500 }),
+  actionText: varchar('action_text', { length: 100 }),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   preferences: many(userPreferences),
@@ -151,6 +206,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   wellnessLogs: many(wellnessLogs),
   flashcardDecks: many(flashcardDecks),
   quizResults: many(quizResults),
+  studyGoals: many(studyGoals),
+  studySessions: many(studySessions),
+  studySchedules: many(studySchedules),
+  notifications: many(notifications),
 }));
 
 export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
@@ -198,4 +257,21 @@ export const flashcardsRelations = relations(flashcards, ({ one }) => ({
 export const quizResultsRelations = relations(quizResults, ({ one }) => ({
   user: one(users, { fields: [quizResults.userId], references: [users.id] }),
   deck: one(flashcardDecks, { fields: [quizResults.deckId], references: [flashcardDecks.id] }),
+}));
+
+export const studyGoalsRelations = relations(studyGoals, ({ one }) => ({
+  user: one(users, { fields: [studyGoals.userId], references: [users.id] }),
+}));
+
+export const studySessionsRelations = relations(studySessions, ({ one }) => ({
+  user: one(users, { fields: [studySessions.userId], references: [users.id] }),
+  deck: one(flashcardDecks, { fields: [studySessions.deckId], references: [flashcardDecks.id] }),
+}));
+
+export const studySchedulesRelations = relations(studySchedules, ({ one }) => ({
+  user: one(users, { fields: [studySchedules.userId], references: [users.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
 }));

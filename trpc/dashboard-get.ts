@@ -1,5 +1,5 @@
 import { protectedProcedure } from './init';
-import { wellnessLogs, transactions, budgets, events, flashcards, flashcardDecks } from '../db/schema';
+import { wellnessLogs, transactions, budgets, events, flashcards, flashcardDecks, budgetCategories } from '../db/schema';
 import { gte, lte, desc, sql, and, eq } from 'drizzle-orm';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 
@@ -21,6 +21,7 @@ export const dashboardGet = protectedProcedure.query(async ({ ctx }) => {
     .leftJoin(transactions, and(
       eq(budgets.categoryId, transactions.categoryId),
       eq(transactions.userId, userId),
+      eq(transactions.type, 'expense'),
       gte(transactions.date, monthStart.toISOString().split('T')[0]),
       lte(transactions.date, monthEnd.toISOString().split('T')[0])
     ))
@@ -29,6 +30,30 @@ export const dashboardGet = protectedProcedure.query(async ({ ctx }) => {
       eq(budgets.month, now.getMonth() + 1),
       eq(budgets.year, now.getFullYear())
     ));
+
+  // Get budget breakdown by category
+  const budgetBreakdown = await ctx.db
+    .select({
+      category: budgetCategories.name,
+      budgeted: budgets.amount,
+      spent: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      color: budgetCategories.color,
+    })
+    .from(budgets)
+    .innerJoin(budgetCategories, eq(budgets.categoryId, budgetCategories.id))
+    .leftJoin(transactions, and(
+      eq(budgets.categoryId, transactions.categoryId),
+      eq(transactions.userId, userId),
+      eq(transactions.type, 'expense'),
+      gte(transactions.date, monthStart.toISOString().split('T')[0]),
+      lte(transactions.date, monthEnd.toISOString().split('T')[0])
+    ))
+    .where(and(
+      eq(budgets.userId, userId),
+      eq(budgets.month, now.getMonth() + 1),
+      eq(budgets.year, now.getFullYear())
+    ))
+    .groupBy(budgets.id, budgetCategories.name, budgets.amount, budgetCategories.color);
 
   // Get upcoming events
   const upcomingEvents = await ctx.db
@@ -68,6 +93,7 @@ export const dashboardGet = protectedProcedure.query(async ({ ctx }) => {
 
   return {
     budgetSummary: budgetSummary[0] || { totalBudget: 0, totalSpent: 0 },
+    budgetBreakdown,
     upcomingEvents,
     recentFlashcards,
     wellnessSummary,

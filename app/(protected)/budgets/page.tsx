@@ -49,7 +49,7 @@ export default function BudgetsPage() {
   // Helper function to sanitize and parse errors
   const handleFormError = (error: any, setFieldErrors: (errors: { [key: string]: string }) => void) => {
     // Check if it's a 500 internal server error
-    if (error?.code === 'INTERNAL_SERVER_ERROR' || error?.status === 500) {
+    if (error?.data?.httpStatus === 500 || error?.status === 500 || error?.code === 'INTERNAL_SERVER_ERROR') {
       toast.error('Internal server error. Please try again later.');
       return;
     }
@@ -57,9 +57,10 @@ export default function BudgetsPage() {
     // Clear previous errors
     setFieldErrors({});
 
-    if (error?.message) {
+    if (error?.message || error?.data?.message) {
+      const errorMessage = error?.message || error?.data?.message;
       // Sanitize error message - remove any sensitive information
-      const sanitizedMessage = error.message
+      const sanitizedMessage = errorMessage
         .replace(/password/gi, 'credential')
         .replace(/token/gi, 'session')
         .replace(/secret/gi, 'key')
@@ -163,20 +164,20 @@ export default function BudgetsPage() {
   return (
     <PageLayout>
       <div className="min-h-screen bg-linear-to-br from-background via-background/95 to-background/90">
-        <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
           {/* Modern Header */}
-          <div className="mb-12">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="mb-6 sm:mb-12">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
               <div className="space-y-1">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-linear-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center shadow-lg border border-primary/20">
-                    <PiggyBank className="w-6 h-6 text-primary" />
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-linear-to-br from-primary/20 to-primary/10 rounded-2xl flex items-center justify-center shadow-lg border border-primary/20">
+                    <PiggyBank className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                   </div>
                   <div>
-                    <h1 className="text-4xl font-bold bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                       Budget Management
                     </h1>
-                    <p className="text-lg text-muted-foreground">Track your expenses and manage your financial goals</p>
+                    <p className="text-base sm:text-lg text-muted-foreground">Track your expenses and manage your financial goals</p>
                   </div>
                 </div>
               </div>
@@ -192,7 +193,7 @@ export default function BudgetsPage() {
                       setYear(y);
                       setMonth(m);
                     }}
-                    className="w-40 h-11"
+                    className="w-36 sm:w-40 h-10 sm:h-11"
                   />
                 </div>
               </div>
@@ -264,14 +265,14 @@ export default function BudgetsPage() {
                   Category
                 </Button>
               </DialogTrigger>
-            <DialogContent className="sm:max-w-md border-0 shadow-xl bg-card/95 backdrop-blur-sm">
+            <DialogContent className="w-[95vw] max-w-md sm:max-w-md border-0 shadow-xl bg-card/95 backdrop-blur-sm">
               <DialogHeader className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Plus className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <DialogTitle className="text-xl font-semibold">Create Category</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl font-semibold">Create Category</DialogTitle>
                     <DialogDescription>
                       Add a new budget category to organize your expenses.
                     </DialogDescription>
@@ -341,14 +342,14 @@ export default function BudgetsPage() {
                   Budget
                 </Button>
               </DialogTrigger>
-            <DialogContent className="sm:max-w-md border-0 shadow-xl bg-card/95 backdrop-blur-sm">
+            <DialogContent className="w-[95vw] max-w-md sm:max-w-md border-0 shadow-xl bg-card/95 backdrop-blur-sm">
               <DialogHeader className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                     <DollarSign className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <DialogTitle className="text-xl font-semibold">Set Budget</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl font-semibold">Set Budget</DialogTitle>
                     <DialogDescription>
                       Set a spending limit for a category this month.
                     </DialogDescription>
@@ -392,7 +393,14 @@ export default function BudgetsPage() {
                       type="number"
                       step="0.01"
                       value={budgetForm.amount}
-                      onChange={(e) => setBudgetForm({ ...budgetForm, amount: parseFloat(e.target.value) })}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (!isNaN(value) && value >= 0) {
+                          setBudgetForm({ ...budgetForm, amount: value });
+                        } else if (e.target.value === '') {
+                          setBudgetForm({ ...budgetForm, amount: 0 });
+                        }
+                      }}
                       placeholder="0.00"
                       className={`pl-10 h-11 ${budgetErrors.amount ? 'border-destructive focus:border-destructive' : ''}`}
                       required
@@ -436,14 +444,14 @@ export default function BudgetsPage() {
                   Transaction
                 </Button>
               </DialogTrigger>
-            <DialogContent className="sm:max-w-md border-0 shadow-xl bg-card/95 backdrop-blur-sm">
+            <DialogContent className="w-[95vw] max-w-md sm:max-w-md border-0 shadow-xl bg-card/95 backdrop-blur-sm">
               <DialogHeader className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Receipt className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <DialogTitle className="text-xl font-semibold">Add Transaction</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl font-semibold">Add Transaction</DialogTitle>
                     <DialogDescription>
                       Record a new income or expense transaction.
                     </DialogDescription>
@@ -517,7 +525,14 @@ export default function BudgetsPage() {
                       type="number"
                       step="0.01"
                       value={transactionForm.amount}
-                      onChange={(e) => setTransactionForm({ ...transactionForm, amount: parseFloat(e.target.value) })}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (!isNaN(value) && value >= 0) {
+                          setTransactionForm({ ...transactionForm, amount: value });
+                        } else if (e.target.value === '') {
+                          setTransactionForm({ ...transactionForm, amount: 0 });
+                        }
+                      }}
                       placeholder="0.00"
                       className={`pl-10 h-11 ${transactionErrors.amount ? 'border-destructive focus:border-destructive' : ''}`}
                       required
@@ -582,14 +597,14 @@ export default function BudgetsPage() {
             {/* Budgets Overview */}
             <Card className="group relative overflow-hidden border-0 shadow-xl bg-linear-to-br from-card/50 to-card/30 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
               <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <CardHeader className="relative z-10 pb-6">
+              <CardHeader className="relative z-10 pb-4 sm:pb-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
-                    <PiggyBank className="w-5 h-5 text-primary" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
+                    <PiggyBank className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   </div>
-                  <CardTitle className="text-2xl">Budget Overview</CardTitle>
+                  <CardTitle className="text-lg sm:text-2xl">Budget Overview</CardTitle>
                 </div>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm sm:text-base">
                   Track your spending against budgets for {new Date(year, month - 1).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
                 </CardDescription>
               </CardHeader>
@@ -648,14 +663,14 @@ export default function BudgetsPage() {
             {/* Recent Transactions */}
             <Card className="group relative overflow-hidden border-0 shadow-xl bg-linear-to-br from-card/50 to-card/30 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
               <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <CardHeader className="relative z-10 pb-6">
+              <CardHeader className="relative z-10 pb-4 sm:pb-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
-                    <Receipt className="w-5 h-5 text-primary" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
+                    <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   </div>
-                  <CardTitle className="text-2xl">Recent Transactions</CardTitle>
+                  <CardTitle className="text-lg sm:text-2xl">Recent Transactions</CardTitle>
                 </div>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm sm:text-base">
                   Your latest financial activity
                 </CardDescription>
               </CardHeader>
