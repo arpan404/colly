@@ -7,6 +7,7 @@ import { trpc } from './trpc-client';
 interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (token: string) => void;
   logout: () => void;
 }
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(storedToken);
       }
     }
+    setIsLoading(false);
   }, []);
 
   const login = (newToken: string) => {
@@ -47,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         token,
         isAuthenticated: !!token,
+        isLoading,
         login,
         logout,
       }}

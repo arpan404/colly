@@ -1,34 +1,43 @@
 'use client';
 
 import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "./ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "./ui/sidebar";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 
 interface PageLayoutProps {
   children: ReactNode;
 }
 
 export const PageLayout = ({ children }: PageLayoutProps) => {
+  const pathname = usePathname();
+
   return (
     <SidebarProvider>
-      {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border/50 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger className="h-10 w-10" />
-            <div className="text-lg font-semibold text-foreground">Colly</div>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex min-h-screen w-full pt-16">
-        <Sidebar />
-        <SidebarInset className="bg-linear-to-br from-background/50 via-background to-background/80">
-          <div className="flex flex-1 flex-col gap-2 sm:gap-4 p-2 sm:p-4">
+      <Sidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="min-h-[100vh] flex-1 rounded-xl md:min-h-min">
             {children}
           </div>
-        </SidebarInset>
-      </div>
+        </div>
+      </SidebarInset>
     </SidebarProvider>
   );
 };

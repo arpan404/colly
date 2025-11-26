@@ -9,19 +9,19 @@ interface ProtectedLayoutProps {
 }
 
 export function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     // If not authenticated and not on auth pages, redirect to login
-    if (!isAuthenticated && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+    if (!isLoading && !isAuthenticated && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
       router.push('/login');
     }
-  }, [isAuthenticated, router, pathname]);
+  }, [isLoading, isAuthenticated, router, pathname]);
 
-  // Show loading or nothing while checking authentication
-  if (!isAuthenticated && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+  // Show loading while checking authentication
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">

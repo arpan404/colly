@@ -3,11 +3,11 @@
 import { PageLayout } from "@/components/PageLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Bell, BookOpen, Lightbulb, Brain, BarChart3, Clock, Hand } from "lucide-react";
+import { Calendar, Bell, BookOpen, Lightbulb, Brain, BarChart3, Clock, Hand, ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { trpc } from '@/lib/trpc-client';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { useState, useEffect } from 'react';
 
@@ -49,6 +49,7 @@ const productivityTips = [
 export default function DashboardPage() {
   const { data, isLoading } = trpc.dashboard.get.useQuery();
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
     // Shuffle to a new tip every hour
@@ -350,16 +351,63 @@ export default function DashboardPage() {
                   {/* Calendar placeholder */}
                   <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-linear-to-br from-secondary/20 to-secondary/10 rounded-xl border border-secondary/30 hover:border-primary/30 transition-colors duration-300">
                     <div className="text-center">
-                      <div className="text-sm font-medium text-muted-foreground mb-2">November 2025</div>
+                      <div className="flex items-center justify-between mb-4">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <div className="text-sm font-medium text-muted-foreground">
+                          {format(currentMonth, 'MMMM yyyy')}
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <div className="grid grid-cols-7 gap-1 text-xs">
                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                          <div key={i} className="text-center text-muted-foreground py-1">{day}</div>
+                          <div key={i} className="text-center text-muted-foreground py-1 font-medium">{day}</div>
                         ))}
-                        {Array.from({ length: 35 }, (_, i) => (
-                          <div key={i} className={`text-center py-1 text-xs ${i === 15 ? 'bg-primary text-primary-foreground rounded' : ''}`}>
-                            {((i - 1) % 31) + 1}
-                          </div>
-                        ))}
+                        {(() => {
+                          const monthStart = startOfMonth(currentMonth);
+                          const monthEnd = endOfMonth(monthStart);
+                          const startDate = startOfWeek(monthStart);
+                          const endDate = endOfWeek(monthEnd);
+                          
+                          const days = eachDayOfInterval({ start: startDate, end: endDate });
+
+                          return days.map((day, i) => {
+                            const isCurrentMonth = isSameMonth(day, monthStart);
+                            const isTodayDate = isToday(day);
+                            const hasEvent = data?.upcomingEvents?.some(event => 
+                              isSameDay(new Date(event.startDate), day)
+                            );
+
+                            return (
+                              <div 
+                                key={i} 
+                                className={`
+                                  text-center py-1 text-xs relative flex items-center justify-center
+                                  ${!isCurrentMonth ? 'text-muted-foreground/30' : ''}
+                                  ${isTodayDate ? 'bg-primary text-primary-foreground rounded-md font-bold' : ''}
+                                `}
+                              >
+                                {format(day, 'd')}
+                                {hasEvent && !isTodayDate && isCurrentMonth && (
+                                  <div className="absolute bottom-0.5 w-1 h-1 rounded-full bg-primary"></div>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   </div>
