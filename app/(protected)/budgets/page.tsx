@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { trpc } from '@/lib/trpc-client';
+import { formatCurrency } from '@/lib/utils';
 import { Plus, DollarSign, TrendingUp, TrendingDown, Calendar, PiggyBank, Receipt, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,6 +26,7 @@ export default function BudgetsPage() {
   const { data: categories, refetch: refetchCategories } = trpc.budgets.categories.get.useQuery();
   const { data: budgets, refetch: refetchBudgets } = trpc.budgets.get.useQuery({ month, year });
   const { data: transactions, refetch: refetchTransactions } = trpc.budgets.transactions.get.useQuery({ limit: 50, offset: 0 });
+  const { data: userPreferences } = trpc.user.preferences.get.useQuery();
 
   const createCategoryMutation = trpc.budgets.categories.create.useMutation();
   const createBudgetMutation = trpc.budgets.create.useMutation();
@@ -210,7 +212,7 @@ export default function BudgetsPage() {
                   <PiggyBank className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent className="relative z-10">
-                  <div className="text-2xl font-bold text-primary">${totalBudget.toFixed(2)}</div>
+                  <div className="text-2xl font-bold text-primary">{formatCurrency(totalBudget, userPreferences?.currency)}</div>
                   <p className="text-xs text-muted-foreground">
                     For {new Date(year, month - 1).toLocaleDateString('default', { month: 'long', year: 'numeric' })}
                   </p>
@@ -224,7 +226,7 @@ export default function BudgetsPage() {
                   <TrendingDown className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent className="relative z-10">
-                  <div className="text-2xl font-bold text-primary">${totalSpent.toFixed(2)}</div>
+                  <div className="text-2xl font-bold text-primary">{formatCurrency(totalSpent, userPreferences?.currency)}</div>
                   <p className="text-xs text-muted-foreground">
                     {totalBudget > 0 ? `${((totalSpent / totalBudget) * 100).toFixed(1)}% of budget` : 'No budget set'}
                   </p>
@@ -239,7 +241,7 @@ export default function BudgetsPage() {
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className={`text-2xl font-bold ${remainingBudget >= 0 ? 'text-primary' : 'text-red-600'}`}>
-                    ${remainingBudget.toFixed(2)}
+                    {formatCurrency(remainingBudget, userPreferences?.currency)}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {remainingBudget >= 0 ? 'Under budget' : 'Over budget'}
@@ -630,7 +632,7 @@ export default function BudgetsPage() {
                               <span className="font-medium">{item.category.name}</span>
                             </div>
                             <div className="text-right">
-                              <div className="font-semibold">${spent.toFixed(2)} / ${budget.toFixed(2)}</div>
+                              <div className="font-semibold">{formatCurrency(spent, userPreferences?.currency)} / {formatCurrency(budget, userPreferences?.currency)}</div>
                               <div className={`text-sm ${isOverBudget ? 'text-red-600' : isNearLimit ? 'text-yellow-600' : 'text-green-600'}`}>
                                 {percentage.toFixed(1)}% used
                               </div>
@@ -642,7 +644,7 @@ export default function BudgetsPage() {
                           />
                           {isOverBudget && (
                             <Badge variant="destructive" className="text-xs">
-                              Over budget by ${(spent - budget).toFixed(2)}
+                              Over budget by {formatCurrency(spent - budget, userPreferences?.currency)}
                             </Badge>
                           )}
                         </div>
@@ -693,7 +695,7 @@ export default function BudgetsPage() {
                           </div>
                         </div>
                         <div className={`font-semibold text-sm ${item.transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                          {item.transaction.type === 'income' ? '+' : '-'}${Number(item.transaction.amount).toFixed(2)}
+                          {item.transaction.type === 'income' ? '+' : '-'}{formatCurrency(Number(item.transaction.amount), userPreferences?.currency)}
                         </div>
                       </div>
                     ))}

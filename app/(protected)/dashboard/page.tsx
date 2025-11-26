@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Bell, BookOpen, Lightbulb, Brain, BarChart3, Clock, Hand, ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { trpc } from '@/lib/trpc-client';
+import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
@@ -48,6 +49,7 @@ const productivityTips = [
 export default function DashboardPage() {
   const { data, isLoading } = trpc.dashboard.get.useQuery();
   const { data: eventsData } = trpc.events.get.useQuery({ includePublic: true });
+  const { data: userPreferences } = trpc.user.preferences.get.useQuery();
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -212,7 +214,7 @@ export default function DashboardPage() {
                             stroke="var(--color-muted-foreground)"
                             fontSize={10}
                             tick={{ fill: 'var(--color-muted-foreground)' }}
-                            tickFormatter={(value) => `$${value}`}
+                            tickFormatter={(value) => formatCurrency(Number(value), userPreferences?.currency)}
                           />
                           <Tooltip
                             contentStyle={{
@@ -223,7 +225,7 @@ export default function DashboardPage() {
                               fontSize: '12px'
                             }}
                             formatter={(value, name) => [
-                              `$${Number(value).toFixed(2)}`,
+                              formatCurrency(Number(value), userPreferences?.currency),
                               name === 'budgeted' ? 'Budgeted' :
                               name === 'spent' ? 'Spent' : name
                             ]}
@@ -262,13 +264,13 @@ export default function DashboardPage() {
                     <div className="p-3 sm:p-4 bg-linear-to-br from-secondary/30 to-secondary/20 rounded-lg border border-secondary/30 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
                       <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Spent</p>
                       <p className="text-lg sm:text-2xl font-bold text-foreground">
-                        ${Number(data?.budgetSummary.totalSpent || 0).toFixed(2)}
+                        {formatCurrency(Number(data?.budgetSummary.totalSpent || 0), userPreferences?.currency)}
                       </p>
                     </div>
                     <div className="p-3 sm:p-4 bg-linear-to-br from-secondary/30 to-secondary/20 rounded-lg border border-secondary/30 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
                       <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Budget</p>
                       <p className="text-lg sm:text-2xl font-bold text-foreground">
-                        ${Number(data?.budgetSummary.totalBudget || 0).toFixed(2)}
+                        {formatCurrency(Number(data?.budgetSummary.totalBudget || 0), userPreferences?.currency)}
                       </p>
                     </div>
                   </div>

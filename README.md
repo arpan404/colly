@@ -182,20 +182,6 @@ npm run db:studio    # open drizzle studio to inspect data
 
 ---
 
-## Testing
-
-Run tests:
-
-```bash
-npm test            # watch
-npm run test:run    # single run (CI)
-npm run test:coverage
-```
-
-Tests run against an isolated test DB (`DATABASE_URL_TEST`). Adjust the test env when running in CI.
-
----
-
 ## Deployment
 
 High-level steps for production:

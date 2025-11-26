@@ -18,7 +18,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 const navigationItems = [
@@ -83,6 +83,9 @@ function AppSidebar() {
           <SidebarMenuItem>
             <div className="flex items-center gap-4 px-4 py-4">
               <Avatar className="w-10 h-10">
+                {user?.avatar && (
+                  <AvatarImage src={user.avatar} alt={user.name || 'User avatar'} />
+                )}
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
                   {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>

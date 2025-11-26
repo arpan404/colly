@@ -9,7 +9,7 @@ import { eventsGet, eventCreate, eventUpdate, eventDelete } from './events';
 import { wellnessLogsGet, wellnessLogCreate, wellnessLogUpdate } from './wellness';
 import { flashcardDecksGet, flashcardDeckCreate, flashcardDeckDelete, flashcardDeckGet, flashcardsGet, flashcardCreate, flashcardUpdate, flashcardDelete, quizResultCreate, flashcardsStatsGet, flashcardDeckStatsGet } from './flashcards';
 import { studyGoalsGet, studyGoalCreate, studyGoalUpdate, studyGoalDelete, studySessionsGet, studySessionCreate, studySchedulesGet, studyScheduleCreate, studyScheduleUpdate, studyScheduleDelete, studyPlanStatsGet } from './study-plans';
-import { userPreferencesGet, userPreferencesUpdate, userProfileGet, userProfileUpdate } from './user-profile';
+import { userPreferencesGet, userPreferencesUpdate, userProfileGet, userProfileUpdate, userPasswordChange, userDataExport, userDataReset, userStatistics } from './user-profile';
 import { notificationsRouter } from './notifications';
 
 export const authRouter = router({
@@ -27,6 +27,14 @@ export const userRouter = router({
     get: userPreferencesGet,
     update: userPreferencesUpdate,
   }),
+  password: router({
+    change: userPasswordChange,
+  }),
+  data: router({
+    export: userDataExport,
+    reset: userDataReset,
+  }),
+  statistics: userStatistics,
 });
 
 export const dashboardRouter = router({
