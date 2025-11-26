@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { PageLayout } from '@/components/PageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -371,7 +370,7 @@ export default function RoutinesPage() {
   }));
 
   return (
-    <PageLayout>
+    
       <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -1215,7 +1214,7 @@ export default function RoutinesPage() {
           )}
         </div>
       </div>
-    </PageLayout>
+    
   );
 }
 

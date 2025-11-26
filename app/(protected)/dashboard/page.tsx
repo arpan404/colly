@@ -1,6 +1,5 @@
 'use client';
 
-import { PageLayout } from "@/components/PageLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Bell, BookOpen, Lightbulb, Brain, BarChart3, Clock, Hand, ChevronLeft, ChevronRight } from "lucide-react";
@@ -9,7 +8,7 @@ import { trpc } from '@/lib/trpc-client';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 const productivityTips = [
   {
@@ -48,8 +47,10 @@ const productivityTips = [
 
 export default function DashboardPage() {
   const { data, isLoading } = trpc.dashboard.get.useQuery();
+  const { data: eventsData } = trpc.events.get.useQuery({ includePublic: true });
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     // Shuffle to a new tip every hour
@@ -60,24 +61,45 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Compute events for selected date from eventsData
+  const upcomingEvents = useMemo(() => {
+    if (!eventsData) return [];
+    const targetDate = new Date(selectedDate);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    return eventsData
+      .filter(event => {
+        const eventDate = new Date(event.startDate);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate.getTime() === targetDate.getTime();
+      })
+      .sort((a, b) => {
+        // Sort by time if available, otherwise by title
+        if (a.startTime && b.startTime) {
+          return a.startTime.localeCompare(b.startTime);
+        }
+        return a.title.localeCompare(b.title);
+      });
+  }, [eventsData, selectedDate]);
+
   const currentTip = productivityTips[currentTipIndex];
   const TipIcon = currentTip.icon;
 
   if (isLoading) {
     return (
-      <PageLayout>
+      
         <div className="flex items-center justify-center h-64">
           <div className="animate-pulse">
             <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
           </div>
           <div className="ml-3 text-muted-foreground">Loading your dashboard...</div>
         </div>
-      </PageLayout>
+      
     );
   }
 
   return (
-    <PageLayout>
+    
       <div className="min-h-screen bg-linear-to-br from-background via-background/95 to-background/90">
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
           {/* Modern Header */}
@@ -173,27 +195,27 @@ export default function DashboardPage() {
                           }))}
                           margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
                           <XAxis
                             dataKey="category"
-                            stroke="hsl(var(--muted-foreground))"
+                            stroke="var(--color-muted-foreground)"
                             fontSize={10}
-                            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                            tick={{ fill: 'var(--color-muted-foreground)' }}
                             angle={-45}
                             textAnchor="end"
                             height={50}
                             interval={0}
                           />
                           <YAxis
-                            stroke="hsl(var(--muted-foreground))"
+                            stroke="var(--color-muted-foreground)"
                             fontSize={10}
-                            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                            tick={{ fill: 'var(--color-muted-foreground)' }}
                             tickFormatter={(value) => `$${value}`}
                           />
                           <Tooltip
                             contentStyle={{
-                              backgroundColor: 'hsl(var(--card))',
-                              border: '1px solid hsl(var(--border))',
+                              backgroundColor: 'var(--color-card)',
+                              border: '1px solid var(--color-border)',
                               borderRadius: '8px',
                               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                               fontSize: '12px'
@@ -203,22 +225,22 @@ export default function DashboardPage() {
                               name === 'budgeted' ? 'Budgeted' :
                               name === 'spent' ? 'Spent' : name
                             ]}
-                            labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
+                            labelStyle={{ color: 'var(--color-foreground)', fontWeight: 'bold' }}
                           />
                           <Legend
-                            wrapperStyle={{ fontSize: '10px', color: 'hsl(var(--muted-foreground))' }}
+                            wrapperStyle={{ fontSize: '10px', color: 'var(--color-muted-foreground)' }}
                           />
                           <Bar
                             dataKey="spent"
                             name="Spent"
-                            fill="hsl(var(--primary))"
+                            fill="var(--color-primary)"
                             radius={[2, 2, 0, 0]}
                             opacity={0.8}
                           />
                           <Bar
                             dataKey="budgeted"
                             name="Budgeted"
-                            fill="hsl(var(--muted))"
+                            fill="var(--color-muted)"
                             radius={[2, 2, 0, 0]}
                             opacity={0.6}
                           />
@@ -303,32 +325,36 @@ export default function DashboardPage() {
                   <h2 className="text-lg sm:text-xl font-semibold">Quick Actions</h2>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                  <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 hover:scale-105 hover:shadow-lg">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-                    </div>
-                    <span className="text-xs sm:text-sm">Quiz/Trivia</span>
-                  </Button>
-                  <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 hover:scale-105 hover:shadow-lg">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-                    </div>
-                    <span className="text-xs sm:text-sm">Budget Report</span>
-                  </Button>
-                  <Link href="/events" className="block">
+                  <Link href="/flashcards" className="block">
+                    <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 hover:scale-105 hover:shadow-lg w-full">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                      </div>
+                      <span className="text-xs sm:text-sm">Flashcards</span>
+                    </Button>
+                  </Link>
+                  <Link href="/budgets" className="block">
+                    <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 hover:scale-105 hover:shadow-lg w-full">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                      </div>
+                      <span className="text-xs sm:text-sm">Budgets</span>
+                    </Button>
+                  </Link>
+                  <Link href="/social-hub" className="block">
                     <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 w-full hover:scale-105 hover:shadow-lg">
                       <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                         <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                       </div>
-                      <span className="text-xs sm:text-sm">Create Event</span>
+                      <span className="text-xs sm:text-sm">Social Hub</span>
                     </Button>
                   </Link>
-                  <Link href="/routines" className="block">
+                  <Link href="/wellness" className="block">
                     <Button variant="outline" className="group h-16 sm:h-20 flex-col gap-2 hover:bg-primary/5 hover:border-primary/30 transition-all duration-200 w-full hover:scale-105 hover:shadow-lg">
                       <div className="w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                        <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                       </div>
-                      <span className="text-xs sm:text-sm">Your Routine</span>
+                      <span className="text-xs sm:text-sm">Wellness</span>
                     </Button>
                   </Link>
                 </div>
@@ -345,7 +371,9 @@ export default function DashboardPage() {
                     <div className="w-8 h-8 sm:w-10 sm:h-10 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center shadow-sm">
                       <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                     </div>
-                    <h2 className="text-lg sm:text-xl font-semibold">Upcoming Events</h2>
+                    <h2 className="text-lg sm:text-xl font-semibold">
+                      {isSameDay(selectedDate, new Date()) ? "Today's Events" : `Events for ${format(selectedDate, 'MMM d, yyyy')}`}
+                    </h2>
                   </div>
 
                   {/* Calendar placeholder */}
@@ -387,24 +415,28 @@ export default function DashboardPage() {
                           return days.map((day, i) => {
                             const isCurrentMonth = isSameMonth(day, monthStart);
                             const isTodayDate = isToday(day);
-                            const hasEvent = data?.upcomingEvents?.some(event => 
+                            const isSelectedDate = isSameDay(day, selectedDate);
+                            const hasEvent = eventsData?.some(event => 
                               isSameDay(new Date(event.startDate), day)
                             );
 
                             return (
-                              <div 
-                                key={i} 
+                              <button
+                                key={i}
+                                onClick={() => setSelectedDate(day)}
                                 className={`
                                   text-center py-1 text-xs relative flex items-center justify-center
-                                  ${!isCurrentMonth ? 'text-muted-foreground/30' : ''}
-                                  ${isTodayDate ? 'bg-primary text-primary-foreground rounded-md font-bold' : ''}
+                                  rounded-md transition-all duration-200
+                                  ${!isCurrentMonth ? 'text-muted-foreground/30' : 'hover:bg-secondary cursor-pointer'}
+                                  ${isTodayDate ? 'ring-2 ring-primary ring-inset' : ''}
+                                  ${isSelectedDate ? 'bg-primary text-primary-foreground font-bold' : ''}
                                 `}
                               >
                                 {format(day, 'd')}
-                                {hasEvent && !isTodayDate && isCurrentMonth && (
+                                {hasEvent && !isSelectedDate && isCurrentMonth && (
                                   <div className="absolute bottom-0.5 w-1 h-1 rounded-full bg-primary"></div>
                                 )}
-                              </div>
+                              </button>
                             );
                           });
                         })()}
@@ -414,8 +446,8 @@ export default function DashboardPage() {
 
                   {/* Events list */}
                   <div className="space-y-3">
-                    {data?.upcomingEvents && data.upcomingEvents.length > 0 ? (
-                      data.upcomingEvents.map((event: { id: string; title: string; startDate: string; startTime: string | null }) => (
+                    {upcomingEvents && upcomingEvents.length > 0 ? (
+                      upcomingEvents.map((event: { id: string; title: string; startDate: string; startTime: string | null }) => (
                         <div key={event.id} className="group/item flex items-start gap-3 p-3 sm:p-4 bg-linear-to-r from-secondary/30 to-secondary/20 rounded-lg hover:bg-secondary/40 transition-all duration-200 hover:scale-[1.02] border border-secondary/30 hover:border-primary/30">
                           <div className="w-3 h-3 rounded-full bg-primary mt-1.5 shrink-0 group-hover/item:scale-110 transition-transform duration-200"></div>
                           <div className="flex-1 min-w-0">
@@ -432,8 +464,8 @@ export default function DashboardPage() {
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
                           <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                         </div>
-                        <p className="text-muted-foreground font-medium text-sm sm:text-base">No upcoming events</p>
-                        <p className="text-xs text-muted-foreground mt-1">Create your first event!</p>
+                        <p className="text-muted-foreground font-medium text-sm sm:text-base">No events today</p>
+                        <p className="text-xs text-muted-foreground mt-1">Your schedule is clear!</p>
                       </div>
                     )}
                   </div>
@@ -443,7 +475,7 @@ export default function DashboardPage() {
           </div>
           </div>
       </div>
-    </PageLayout>
+    
   );
 }
 

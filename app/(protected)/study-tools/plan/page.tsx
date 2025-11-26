@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { trpc } from '@/lib/trpc-client';
 import { toast } from 'sonner';
-import { PageLayout } from '@/components/PageLayout';
 import {
   Target,
   Calendar,
@@ -73,7 +72,7 @@ export default function StudyPlan() {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   return (
-    <PageLayout>
+    
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-12">
@@ -399,6 +398,6 @@ export default function StudyPlan() {
           </div>
         </div>
       </div>
-    </PageLayout>
+    
   );
 }

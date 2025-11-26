@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { trpc } from '@/lib/trpc-client';
 import { toast } from 'sonner';
-import { PageLayout } from '@/components/PageLayout';
 import {
   BookOpen,
   Plus,
@@ -157,7 +156,7 @@ export default function ManageDeck() {
 
   if (!deckData) {
     return (
-      <PageLayout>
+      
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
@@ -166,12 +165,12 @@ export default function ManageDeck() {
             </div>
           </div>
         </div>
-      </PageLayout>
+      
     );
   }
 
   return (
-    <PageLayout>
+    
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -414,6 +413,6 @@ export default function ManageDeck() {
           </CardContent>
         </Card>
       </div>
-    </PageLayout>
+    
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { PageLayout } from '@/components/PageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,7 +109,7 @@ export default function WellnessPage() {
   };
 
   return (
-    <PageLayout>
+    
       <div className="min-h-screen bg-linear-to-br from-background via-background/95 to-background/90">
         <div className="p-6 lg:p-8 max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
@@ -482,7 +481,7 @@ export default function WellnessPage() {
         </Card>
       </div>
       </div>
-    </PageLayout>
+    
   );
 }
 

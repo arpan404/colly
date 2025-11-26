@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { PageLayout } from '@/components/PageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -173,7 +172,7 @@ export default function FlashcardsPage() {
   const selectedDeck = decks?.find((d: any) => d.deck.id === selectedDeckId);
 
   return (
-    <PageLayout>
+    
       <div className="p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
@@ -642,7 +641,7 @@ export default function FlashcardsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </PageLayout>
+    
   );
 }
 

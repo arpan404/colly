@@ -1,6 +1,5 @@
 "use client";
 
-import { PageLayout } from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Palette, DollarSign, Mail, Type, Activity, User, Trash2, Settings as SettingsIcon, Shield, Bell, Monitor, Sun, Moon } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useTheme } from 'next-themes';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -147,24 +146,24 @@ const Settings = () => {
     // close dialog
     setIsResetOpen(false);
     // TODO: Implement actual data reset.
-    toast({ title: 'Reset not implemented', description: 'Data reset functionality not yet implemented.' });
+    toast.error('Reset not implemented', { description: 'Data reset functionality not yet implemented.' });
   };
 
   if (isLoading) {
     return (
-      <PageLayout>
+      
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading settings...</p>
           </div>
         </div>
-      </PageLayout>
+      
     );
   }
 
   return (
-    <PageLayout>
+    
       <div className="min-h-screen bg-linear-to-br from-background via-background/95 to-background/90">
         <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
           {/* Modern Header */}
@@ -492,7 +491,7 @@ const Settings = () => {
           </div>
         </div>
       </div>
-    </PageLayout>
+    
   );
 };
 

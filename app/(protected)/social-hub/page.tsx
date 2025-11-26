@@ -1,6 +1,5 @@
 "use client";
 
-import { PageLayout } from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -211,7 +210,7 @@ const SocialHub = () => {
   
 
   return (
-    <PageLayout>
+    
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
@@ -678,7 +677,7 @@ const SocialHub = () => {
           </div>
         </div>
       </div>
-    </PageLayout>
+    
   );
 };
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { PageLayout } from '@/components/PageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -162,7 +161,7 @@ export default function BudgetsPage() {
   const remainingBudget = totalBudget - totalSpent;
 
   return (
-    <PageLayout>
+    
       <div className="min-h-screen bg-linear-to-br from-background via-background/95 to-background/90">
         <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
           {/* Modern Header */}
@@ -711,6 +710,6 @@ export default function BudgetsPage() {
         </div>
       </div>
     </div>
-</PageLayout>
+
   );
 }

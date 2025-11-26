@@ -1,7 +1,7 @@
 'use client';
 
 import { NavLink } from "@/components/NavLink";
-import { Home, Calendar, DollarSign, Users, Heart, BookOpen, Settings, LogOut, Sparkles, User } from "lucide-react";
+import { Home, Calendar, DollarSign, Users, Heart, BookOpen, Settings, LogOut, GraduationCap, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { trpc } from "@/lib/trpc-client";
@@ -40,11 +40,11 @@ function AppSidebar() {
   };
 
   return (
-    <ShadcnSidebar variant="inset" collapsible="icon">
+    <ShadcnSidebar variant="sidebar">
       <SidebarHeader>
         <div className="flex items-center gap-4 px-4 py-4">
           <div className="w-12 h-12 bg-linear-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
-            <Sparkles className="w-7 h-7 text-primary-foreground" />
+            <GraduationCap className="w-7 h-7 text-primary-foreground" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-sidebar-foreground bg-linear-to-r from-sidebar-foreground to-sidebar-foreground/80 bg-clip-text">
@@ -109,7 +109,8 @@ function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </ShadcnSidebar>
-  );
+
+  );  
 }
 
 export const Sidebar = () => {

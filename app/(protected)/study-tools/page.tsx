@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { PageLayout } from "@/components/PageLayout";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -102,7 +101,7 @@ export default function StudyTools() {
   };
 
   return (
-    <PageLayout>
+    
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-12">
@@ -373,6 +372,6 @@ export default function StudyTools() {
           </div>
         </div>
       </div>
-    </PageLayout>
+    
   );
 }

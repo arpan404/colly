@@ -10,7 +10,6 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { trpc } from '@/lib/trpc-client';
 import { toast } from 'sonner';
-import { PageLayout } from '@/components/PageLayout';
 import {
   Target,
   CheckCircle,
@@ -86,7 +85,7 @@ export default function QuizDeck() {
 
   if (!deckData || !cards) {
     return (
-      <PageLayout>
+      
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
@@ -95,13 +94,13 @@ export default function QuizDeck() {
             </div>
           </div>
         </div>
-      </PageLayout>
+      
     );
   }
 
   if (cards.length === 0) {
     return (
-      <PageLayout>
+      
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <Button variant="outline" onClick={() => router.push('/study-tools')} className="gap-2">
@@ -121,13 +120,13 @@ export default function QuizDeck() {
             </CardContent>
           </Card>
         </div>
-      </PageLayout>
+      
     );
   }
 
   if (!quizStartTime) {
     return (
-      <PageLayout>
+      
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -165,7 +164,7 @@ export default function QuizDeck() {
             </CardContent>
           </Card>
         </div>
-      </PageLayout>
+      
     );
   }
 
@@ -174,7 +173,7 @@ export default function QuizDeck() {
   const isLastQuestion = currentCardIndex === cards.length - 1;
 
   return (
-    <PageLayout>
+    
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -268,6 +267,6 @@ export default function QuizDeck() {
           </CardContent>
         </Card>
       </div>
-    </PageLayout>
+    
   );
 }
