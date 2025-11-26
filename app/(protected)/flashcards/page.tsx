@@ -172,7 +172,7 @@ export default function FlashcardsPage() {
   const selectedDeck = decks?.find((d: any) => d.deck.id === selectedDeckId);
 
   return (
-    
+    <>
       <div className="p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
@@ -641,7 +641,7 @@ export default function FlashcardsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    
+    </>
   );
 }
 

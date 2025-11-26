@@ -139,4 +139,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Font size scaling based on data-font-size attribute */
+  html[data-font-size="small"] {
+    font-size: 14px;
+  }
+  
+  html[data-font-size="medium"] {
+    font-size: 16px;
+  }
+  
+  html[data-font-size="large"] {
+    font-size: 18px;
+  }
 }

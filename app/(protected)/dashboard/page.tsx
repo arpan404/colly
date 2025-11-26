@@ -69,7 +69,9 @@ export default function DashboardPage() {
     
     return eventsData
       .filter(event => {
-        const eventDate = new Date(event.startDate);
+        // Parse date string as local date to avoid timezone issues
+        const [year, month, day] = event.startDate.split('-').map(Number);
+        const eventDate = new Date(year, month - 1, day);
         eventDate.setHours(0, 0, 0, 0);
         return eventDate.getTime() === targetDate.getTime();
       })
@@ -416,9 +418,11 @@ export default function DashboardPage() {
                             const isCurrentMonth = isSameMonth(day, monthStart);
                             const isTodayDate = isToday(day);
                             const isSelectedDate = isSameDay(day, selectedDate);
-                            const hasEvent = eventsData?.some(event => 
-                              isSameDay(new Date(event.startDate), day)
-                            );
+                            const hasEvent = eventsData?.some(event => {
+                              const [year, month, dayNum] = event.startDate.split('-').map(Number);
+                              const eventDate = new Date(year, month - 1, dayNum);
+                              return isSameDay(eventDate, day);
+                            });
 
                             return (
                               <button

@@ -44,7 +44,7 @@ const createEventSchema = z.object({
   endTime: z.string().optional(),
   location: z.string().optional(),
   category: z.string().optional(),
-  isPublic: z.boolean().default(false),
+  isPublic: z.boolean(),
 });
 
 type CreateEventForm = z.infer<typeof createEventSchema>;

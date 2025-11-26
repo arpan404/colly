@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Sparkles, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
@@ -51,7 +51,7 @@ export default function LoginPage() {
         <Card className="border-0 shadow-2xl bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center pb-2">
             <div className="w-16 h-16 bg-linear-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Sparkles className="w-8 h-8 text-primary-foreground" />
+              <GraduationCap className="w-8 h-8 text-primary-foreground" />
             </div>
             <CardTitle className="text-2xl font-bold bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
               Welcome Back
